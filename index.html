@@ -1,201 +1,168 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>Trees • Lombardy</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+<head>
+  <meta charset="utf-8" />
+  <title>Lombardy Green Areas • PMTiles + MapLibre</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <!-- Vendor (local copies you said you have) -->
-    <link href="./vendor/maplibre-gl.css" rel="stylesheet" />
-    <style>
-      html, body, #map { height: 100%; margin: 0; padding: 0; }
-      .maplibregl-ctrl-attrib { font-size: 12px; }
-      .panel {
-        position: absolute; top: 10px; left: 10px; z-index: 1000;
-        background: #fff; padding: 6px 8px; border-radius: 6px;
-        font: 14px system-ui, sans-serif; box-shadow: 0 2px 8px rgba(0,0,0,.12);
-        display: flex; gap: 10px; align-items: center;
-        pointer-events: auto;
-      }
-      button { cursor: pointer; }
-      .popup { font: 13px/1.4 system-ui, sans-serif; }
-      .popup h3 { margin: 0 0 4px; font-size: 15px; }
-      .popup .kv { color: #6b7280; }
-    </style>
-  </head>
-  <body>
-    <div id="map"></div>
+  <link href="./vendor/maplibre-gl.css" rel="stylesheet" />
+  <style>
+    html, body, #map { height: 100%; margin: 0; padding: 0; }
+    .maplibregl-ctrl-attrib { font-size: 12px; }
+    .panel {
+      position: absolute; top: 10px; left: 10px; z-index: 1000;
+      background: #fff; padding: 6px 8px; border-radius: 6px;
+      font: 14px system-ui, sans-serif; box-shadow: 0 2px 8px rgba(0,0,0,.12);
+      display: flex; gap: 10px; align-items: center;
+      pointer-events: auto;
+    }
+    button { cursor: pointer; }
+    .popup { font: 13px/1.35 system-ui, sans-serif; }
+    .popup h3 { margin: 0 0 4px; font-size: 15px; }
+    .popup .kv { color: #555; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
 
-    <div class="panel">
-      <label><input id="orthoToggle" type="checkbox" checked /> Orthophoto</label>
-      <button id="zoomToOrtho" type="button">Zoom to orthophoto</button>
-    </div>
+  <div class="panel">
+    <label><input id="orthoToggle" type="checkbox" /> Orthophoto</label>
+    <button id="zoomToOrtho" type="button">Zoom to orthophoto</button>
+  </div>
 
-    <script src="./vendor/maplibre-gl.js"></script>
-    <script src="./vendor/pmtiles.js"></script>
-    <!-- basemaps.js not required here; we add sources directly -->
+  <script src="./vendor/maplibre-gl.js"></script>
+  <script src="./vendor/pmtiles.js"></script>
+  <script src="./vendor/basemaps.js"></script>
 
-    <script>
-      // ---- CONFIG ----
-      const PMTILES_URL = "https://pub-df9eaf452da44f0ea2cbbcb1a6cd55ac.r2.dev/trees.pmtiles";
-      const SOURCE_LAYER = "trees"; // change if your tippecanoe -l name differs
+  <script>
+    // ---- CONFIG ----
+    const PMTILES_URL = "https://pub-df9eaf452da44f0ea2cbbcb1a6cd55ac.r2.dev/trees.pmtiles";
+    const SOURCE_LAYER = "trees";         // Tippecanoe -l trees
+    const START_CENTER = [9.154940775918, 45.460432649826]; // Lombardy center from your data
+    const START_ZOOM = 10.5;
 
-      const LOMBARDY_CENTER = [9.154940775917993, 45.46043264982563];
-      const LOMBARDY_BOUNDS = [
-        [8.833420589633828, 45.336854024642335], // SW  (from your data bbox)
-        [9.476460962202157, 45.58401127500892]   // NE
-      ];
+    // Register PMTiles protocol so MapLibre understands pmtiles:// URLs
+    const protocol = new pmtiles.Protocol();
+    maplibregl.addProtocol("pmtiles", protocol.tile);
 
-      // PMTiles protocol
-      const protocol = new pmtiles.Protocol();
-      maplibregl.addProtocol("pmtiles", protocol.tile);
-
-      // Minimal style with OSM raster and optional orthophoto
-      const style = {
-        "version": 8,
-        "glyphs": "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
-        "sources": {
-          "osm": {
-            "type": "raster",
-            "tiles": ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-            "tileSize": 256,
-            "attribution":
-              '© <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-          },
-          "ortho": {
-            "type": "raster",
-            "tiles": [
-              // Esri World Imagery (public service; include attribution)
-              "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-            ],
-            "tileSize": 256,
-            "attribution":
-              'Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community'
-          },
-          "trees": {
-            "type": "vector",
-            "url": `pmtiles://${PMTILES_URL}`
-          }
+    // Base style with OSM raster
+    const style = {
+      "version": 8,
+      "glyphs": "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
+      "sources": {
+        "osm": {
+          "type": "raster",
+          "tiles": ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+          "tileSize": 256,
+          "attribution": "© OpenStreetMap contributors"
         },
-        "layers": [
-          // Basemap (OSM) below
-          { "id": "osm", "type": "raster", "source": "osm" },
-          // Orthophoto above OSM (toggle visibility)
-          { "id": "ortho", "type": "raster", "source": "ortho", "layout": { "visibility": "visible" } },
-          // Polygons fill
-          {
-            "id": "trees-fill",
-            "type": "fill",
-            "source": "trees",
-            "source-layer": SOURCE_LAYER,
-            "paint": {
-              "fill-color": "#22c55e",
-              "fill-opacity": 0.35
-            }
-          },
-          // Polygons outline
-          {
-            "id": "trees-outline",
-            "type": "line",
-            "source": "trees",
-            "source-layer": SOURCE_LAYER,
-            "paint": {
-              "line-color": "#14532d",
-              "line-width": 1
-            }
-          }
-        ]
-      };
+        "ortho": {
+          "type": "raster",
+          "tiles": [
+            "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+          ],
+          "tileSize": 256,
+          "attribution": "Esri World Imagery"
+        }
+      },
+      "layers": [
+        { "id": "osm", "type": "raster", "source": "osm" },
+        { "id": "ortho", "type": "raster", "source": "ortho", "layout": { "visibility": "none" } }
+      ]
+    };
 
-      // Map init
-      const map = new maplibregl.Map({
-        container: "map",
-        style,
-        center: LOMBARDY_CENTER,
-        zoom: 11,
-        attributionControl: true
+    const map = new maplibregl.Map({
+      container: "map",
+      style,
+      center: START_CENTER,
+      zoom: START_ZOOM,
+      hash: true
+    });
+
+    map.addControl(new maplibregl.NavigationControl(), "top-right");
+    map.addControl(new maplibregl.ScaleControl({ maxWidth: 200, unit: "metric" }));
+    map.addControl(new maplibregl.AttributionControl({ compact: true }));
+
+    // Attach PMTiles archive (prefetch & metadata cache)
+    const archive = new pmtiles.PMTiles(PMTILES_URL);
+    protocol.add(archive);
+
+    map.on("load", () => {
+      // Add PMTiles vector source
+      map.addSource("trees", {
+        type: "vector",
+        url: `pmtiles://${PMTILES_URL}`
       });
 
-      map.addControl(new maplibregl.NavigationControl(), "top-right");
-      map.addControl(new maplibregl.GeolocateControl({ trackUserLocation: false }));
-
-      // Pre-attach PMTiles archive (metadata/prefetch)
-      (async () => {
-        const p = new pmtiles.PMTiles(PMTILES_URL);
-        protocol.add(p);
-      })();
-
-      // Popup on click
-      map.on("load", () => {
-        const popupFields = [
-          // order matters for display; we’ll gracefully skip missing ones
-          ["economic_value_eur", "Economic value (€)"],
-          ["co2_sequestered_kg", "CO₂ sequestered (kg/yr)"],
-          ["co2_absorption_kg", "CO₂ absorbed (kg/yr)"],
-          ["pm10_capture_g", "PM10 captured (g/yr)"],
-          ["pm25_capture_g", "PM2.5 captured (g/yr)"],
-          ["h2o_retention_l", "Water retained (L/yr)"],
-          ["h2o_precipitation_l", "Water from precipitation (L/yr)"],
-          ["cooling_savings_kwh", "Cooling savings (kWh/yr)"],
-          ["energy_value_eur", "Energy value (€)"],
-          ["co2_absorption_value_eur", "CO₂ absorption value (€)"],
-          ["co2_stock_kg", "CO₂ stock (kg)"],
-          ["co2_stock_value_eur", "CO₂ stock value (€)"],
-          ["o2_produced_kg", "O₂ produced (kg/yr)"],
-          ["pm10_value_eur", "PM10 value (€)"]
-        ];
-
-        function fmt(v) {
-          if (v === null || v === undefined || v === "") return "—";
-          // simple numeric pretty
-          if (typeof v === "number") {
-            const abs = Math.abs(v);
-            const decimals = abs >= 1000 ? 0 : abs >= 100 ? 1 : 2;
-            return v.toLocaleString(undefined, { maximumFractionDigits: decimals });
-          }
-          return String(v);
+      // Fill polygons (green areas)
+      map.addLayer({
+        id: "trees-fill",
+        type: "fill",
+        source: "trees",
+        "source-layer": SOURCE_LAYER,
+        paint: {
+          "fill-color": "#22c55e",
+          "fill-opacity": 0.35
         }
-
-        function popupHTML(props) {
-          let rows = "";
-          for (const [key, label] of popupFields) {
-            if (props[key] !== undefined) {
-              rows += `<div class="kv">${label}: <strong>${fmt(props[key])}</strong></div>`;
-            }
-          }
-          return `<div class="popup">
-              <h3>${props.species_name || props.name || "Area"}</h3>
-              ${props.site_name ? `<div class="kv">${props.site_name}</div>` : ""}
-              ${rows || "<div class='kv'>No attributes</div>"}
-            </div>`;
-        }
-
-        map.on("click", "trees-fill", (e) => {
-          if (!e.features?.length) return;
-          const f = e.features[0];
-          new maplibregl.Popup({ closeButton: true })
-            .setLngLat(e.lngLat)
-            .setHTML(popupHTML(f.properties || {}))
-            .addTo(map);
-        });
-
-        map.on("mouseenter", "trees-fill", () => (map.getCanvas().style.cursor = "pointer"));
-        map.on("mouseleave", "trees-fill", () => (map.getCanvas().style.cursor = ""));
       });
 
-      // UI: toggle orthophoto visibility
+      // Outline
+      map.addLayer({
+        id: "trees-outline",
+        type: "line",
+        source: "trees",
+        "source-layer": SOURCE_LAYER,
+        paint: {
+          "line-color": "#14532d",
+          "line-width": 1.2
+        }
+      });
+
+      // Click popup: uses known fields from your GeoJSON
+      map.on("click", "trees-fill", (e) => {
+        if (!e.features || !e.features.length) return;
+        const f = e.features[0];
+        const p = f.properties || {};
+
+        const co2 = p.co2_sequestered_kg ?? p.co2_absorption_kg;
+        const pm  = p.pm10_capture_g ?? p.pm25_capture_g;
+        const h2o = p.h2o_retention_l ?? p.h2o_precipitation_l;
+        const en  = p.cooling_savings_kwh;
+        const val = p.economic_value_eur ?? p.energy_value_eur ?? p.co2_absorption_value_eur;
+
+        const html = `
+          <div class="popup">
+            <h3>${(p.species_name || p.site_name || "Green area")}</h3>
+            <div class="kv">CO₂ sequestered (yr): <strong>${co2 ?? "—"} kg</strong></div>
+            <div class="kv">PM captured (yr): <strong>${pm ?? "—"} g</strong></div>
+            <div class="kv">Water retained (yr): <strong>${h2o ?? "—"} L</strong></div>
+            <div class="kv">Cooling savings (yr): <strong>${en ?? "—"} kWh</strong></div>
+            <div class="kv">Economic value: <strong>${val ?? "—"} €</strong></div>
+          </div>
+        `;
+        new maplibregl.Popup({ closeButton: true })
+          .setLngLat(e.lngLat)
+          .setHTML(html)
+          .addTo(map);
+      });
+
+      map.on("mouseenter", "trees-fill", () => map.getCanvas().style.cursor = "pointer");
+      map.on("mouseleave", "trees-fill", () => map.getCanvas().style.cursor = "");
+
+      // Orthophoto toggle
       const orthoToggle = document.getElementById("orthoToggle");
       orthoToggle.addEventListener("change", () => {
-        const vis = orthoToggle.checked ? "visible" : "none";
-        if (map.getLayer("ortho")) {
-          map.setLayoutProperty("ortho", "visibility", vis);
-        }
+        map.setLayoutProperty("ortho", "visibility", orthoToggle.checked ? "visible" : "none");
       });
 
-      // UI: zoom to orthophoto (your data extent)
+      // "Zoom to orthophoto" -> just fly to Lombardy bounds/center
       document.getElementById("zoomToOrtho").addEventListener("click", () => {
-        map.fitBounds(LOMBARDY_BOUNDS, { padding: 40, linear: true });
+        map.easeTo({ center: START_CENTER, zoom: 12, duration: 800 });
       });
-    </script>
-  </body>
+    });
+
+    // Clean up protocol on unload
+    window.addEventListener("unload", () => protocol.removeAll());
+  </script>
+</body>
 </html>
