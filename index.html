@@ -2,167 +2,244 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Lombardy Green Areas • PMTiles + MapLibre</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Urban Green • Lombardy</title>
 
+  <!-- Vendor CSS -->
   <link href="./vendor/maplibre-gl.css" rel="stylesheet" />
+
   <style>
-    html, body, #map { height: 100%; margin: 0; padding: 0; }
-    .maplibregl-ctrl-attrib { font-size: 12px; }
-    .panel {
-      position: absolute; top: 10px; left: 10px; z-index: 1000;
-      background: #fff; padding: 6px 8px; border-radius: 6px;
-      font: 14px system-ui, sans-serif; box-shadow: 0 2px 8px rgba(0,0,0,.12);
-      display: flex; gap: 10px; align-items: center;
-      pointer-events: auto;
+    :root{
+      --bg:#0b1220; --panel:#0d1426; --muted:#8fa0bf; --text:#e6edf7; --brand:#22c55e; --accent:#38bdf8;
     }
-    button { cursor: pointer; }
-    .popup { font: 13px/1.35 system-ui, sans-serif; }
-    .popup h3 { margin: 0 0 4px; font-size: 15px; }
-    .popup .kv { color: #555; }
+    html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font:14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"}
+    #app{display:grid;grid-template-columns:360px 1fr;grid-template-rows:100vh}
+    #sidebar{background:var(--panel);border-right:1px solid #1f2937;padding:14px 14px 18px;overflow:auto}
+    #map{position:relative}
+    #mapCanvas{position:absolute;inset:0}
+    h1{font-size:18px;margin:0 0 4px}
+    .muted{color:var(--muted)}
+    .card{background:#0b1220;border:1px solid #1e2b4a;border-radius:12px;padding:12px;margin:10px 0}
+    .row{display:flex;gap:10px;align-items:center}
+    .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0 10px}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid #203152;border-radius:999px;background:#091122}
+    .pill input{transform:scale(1.1)}
+    .search{width:100%;padding:8px 10px;border:1px solid #203152;border-radius:10px;background:#091122;color:var(--text)}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .kpi{background:#091122;border:1px solid #203152;border-radius:10px;padding:10px}
+    .kpi .v{font-size:16px;font-weight:600}
+    .kbd{font:12px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;color:var(--muted)}
+    .footer{position:absolute;left:10px;bottom:8px;background:#0b1220cc;border:1px solid #1e2b4a;border-radius:8px;padding:6px 8px;font-size:12px}
+    .legend{display:flex;gap:10px;align-items:center;margin-top:6px}
+    .sw{width:14px;height:14px;border-radius:50%;background:#22c55e;border:1px solid #052e16}
+
+    @media (max-width: 900px){#app{grid-template-columns:1fr;grid-template-rows:280px 1fr}#sidebar{grid-row:1}#map{grid-row:2}}
+
+    /* Maplibre UI tweaks */
+    .maplibregl-ctrl-attrib{font-size:12px}
+    .maplibregl-popup-content{background:#0b1220;color:var(--text);border:1px solid #1e2b4a;border-radius:10px}
+    .maplibregl-popup-tip{border-top-color:#1e2b4a}
+    .popup h3{margin:0 0 6px;font-size:15px}
+    .popup .kv{color:var(--muted)}
   </style>
 </head>
 <body>
-  <div id="map"></div>
+  <div id="app">
+    <!-- Sidebar (Kraków-style lightweight) -->
+    <aside id="sidebar">
+      <h1>Lombardy Green Areas</h1>
+      <div class="muted">PMTiles on Cloudflare • OSM basemap • Click polygons for details.</div>
 
-  <div class="panel">
-    <label><input id="orthoToggle" type="checkbox" /> Orthophoto</label>
-    <button id="zoomToOrtho" type="button">Zoom to orthophoto</button>
+      <div class="controls">
+        <label class="pill"><input id="toggleAreas" type="checkbox" checked /> <span>Show areas</span></label>
+        <label class="pill"><input id="toggleOutline" type="checkbox" checked /> <span>Outline</span></label>
+        <button id="btnReset" class="pill" title="Reset view">Reset</button>
+      </div>
+
+      <input id="txtSearch" class="search" type="text" placeholder="Filter: min econ € / CO₂ kg / PM g" />
+      <div class="kbd">Examples: <code>econ&gt;1000</code> • <code>co2&gt;50</code> • <code>pm&gt;10</code></div>
+
+      <div class="card">
+        <div class="grid">
+          <div class="kpi"><div class="t muted">CO₂ sequestered (yr)</div><div id="kpiCo2" class="v">—</div></div>
+          <div class="kpi"><div class="t muted">PM captured (yr)</div><div id="kpiPm" class="v">—</div></div>
+          <div class="kpi"><div class="t muted">Water retained (yr)</div><div id="kpiH2o" class="v">—</div></div>
+          <div class="kpi"><div class="t muted">Cooling (kWh/yr)</div><div id="kpiEnergy" class="v">—</div></div>
+          <div class="kpi" style="grid-column:1/-1"><div class="t muted">Economic value (€)</div><div id="kpiEcon" class="v">—</div></div>
+        </div>
+      </div>
+
+      <div class="legend"><span class="sw"></span><span class="muted">Green areas</span></div>
+    </aside>
+
+    <!-- Map -->
+    <main id="map">
+      <div id="mapCanvas"></div>
+      <div class="footer">© You • OpenStreetMap • MapLibre • PMTiles</div>
+    </main>
   </div>
 
+  <!-- Vendor JS -->
   <script src="./vendor/maplibre-gl.js"></script>
   <script src="./vendor/pmtiles.js"></script>
   <script src="./vendor/basemaps.js"></script>
 
   <script>
-    // ---- CONFIG ----
-    const PMTILES_URL = "https://pub-df9eaf452da44f0ea2cbbcb1a6cd55ac.r2.dev/trees.pmtiles";
-    const SOURCE_LAYER = "trees";         // Tippecanoe -l trees
-    const START_CENTER = [9.154940775918, 45.460432649826]; // Lombardy center from your data
-    const START_ZOOM = 10.5;
+    // 1) PMTiles + MapLibre setup
+    const PMTILES_URL = "https://pub-df9eaf452da44f0ea2cbbcb1a6cd55ac.r2.dev/trees.pmtiles"; // your bucket URL
+    const SOURCE_LAYER = "trees"; // tippecanoe -l trees
 
-    // Register PMTiles protocol so MapLibre understands pmtiles:// URLs
     const protocol = new pmtiles.Protocol();
-    maplibregl.addProtocol("pmtiles", protocol.tile);
+    maplibregl.addProtocol('pmtiles', protocol.tile);
 
-    // Base style with OSM raster
+    // Base style with OSM raster tiles
     const style = {
-      "version": 8,
-      "glyphs": "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
-      "sources": {
-        "osm": {
-          "type": "raster",
-          "tiles": ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-          "tileSize": 256,
-          "attribution": "© OpenStreetMap contributors"
+      version: 8,
+      glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
+      sources: {
+        osm: {
+          type: 'raster',
+          tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+          tileSize: 256,
+          attribution: '© OpenStreetMap contributors'
         },
-        "ortho": {
-          "type": "raster",
-          "tiles": [
-            "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-          ],
-          "tileSize": 256,
-          "attribution": "Esri World Imagery"
-        }
       },
-      "layers": [
-        { "id": "osm", "type": "raster", "source": "osm" },
-        { "id": "ortho", "type": "raster", "source": "ortho", "layout": { "visibility": "none" } }
+      layers: [
+        { id: 'osm', type: 'raster', source: 'osm' }
       ]
     };
 
     const map = new maplibregl.Map({
-      container: "map",
+      container: 'mapCanvas',
       style,
-      center: START_CENTER,
-      zoom: START_ZOOM,
-      hash: true
+      center: [9.154940775917993, 45.46043264982563], // Lombardy center from your data
+      zoom: 10.5
     });
 
-    map.addControl(new maplibregl.NavigationControl(), "top-right");
-    map.addControl(new maplibregl.ScaleControl({ maxWidth: 200, unit: "metric" }));
-    map.addControl(new maplibregl.AttributionControl({ compact: true }));
+    map.addControl(new maplibregl.NavigationControl(), 'top-right');
 
-    // Attach PMTiles archive (prefetch & metadata cache)
-    const archive = new pmtiles.PMTiles(PMTILES_URL);
-    protocol.add(archive);
+    // 2) Add the PMTiles vector source + layers
+    map.on('load', async () => {
+      const archive = new pmtiles.PMTiles(PMTILES_URL);
+      protocol.add(archive);
 
-    map.on("load", () => {
-      // Add PMTiles vector source
-      map.addSource("trees", {
-        type: "vector",
-        url: `pmtiles://${PMTILES_URL}`
-      });
+      map.addSource('areas', { type: 'vector', url: `pmtiles://${PMTILES_URL}` });
 
-      // Fill polygons (green areas)
+      // Filled polygons
       map.addLayer({
-        id: "trees-fill",
-        type: "fill",
-        source: "trees",
-        "source-layer": SOURCE_LAYER,
+        id: 'areas-fill',
+        type: 'fill',
+        source: 'areas',
+        'source-layer': SOURCE_LAYER,
         paint: {
-          "fill-color": "#22c55e",
-          "fill-opacity": 0.35
+          'fill-color': '#22c55e',
+          'fill-opacity': 0.45
         }
       });
 
       // Outline
       map.addLayer({
-        id: "trees-outline",
-        type: "line",
-        source: "trees",
-        "source-layer": SOURCE_LAYER,
+        id: 'areas-outline',
+        type: 'line',
+        source: 'areas',
+        'source-layer': SOURCE_LAYER,
         paint: {
-          "line-color": "#14532d",
-          "line-width": 1.2
+          'line-color': '#052e16',
+          'line-width': 1.2
         }
       });
 
-      // Click popup: uses known fields from your GeoJSON
-      map.on("click", "trees-fill", (e) => {
-        if (!e.features || !e.features.length) return;
+      // Hover cursor
+      map.on('mouseenter', 'areas-fill', () => map.getCanvas().style.cursor = 'pointer');
+      map.on('mouseleave', 'areas-fill', () => map.getCanvas().style.cursor = '');
+
+      // Click popup + sidebar KPIs
+      map.on('click', 'areas-fill', (e) => {
         const f = e.features[0];
         const p = f.properties || {};
-
         const co2 = p.co2_sequestered_kg ?? p.co2_absorption_kg;
-        const pm  = p.pm10_capture_g ?? p.pm25_capture_g;
+        const pm = p.pm10_capture_g ?? p.pm25_capture_g;
         const h2o = p.h2o_retention_l ?? p.h2o_precipitation_l;
-        const en  = p.cooling_savings_kwh;
-        const val = p.economic_value_eur ?? p.energy_value_eur ?? p.co2_absorption_value_eur;
+        const energy = p.cooling_savings_kwh;
+        const econ = p.economic_value_eur ?? p.energy_value_eur ?? p.co2_absorption_value_eur;
 
-        const html = `
-          <div class="popup">
-            <h3>${(p.species_name || p.site_name || "Green area")}</h3>
-            <div class="kv">CO₂ sequestered (yr): <strong>${co2 ?? "—"} kg</strong></div>
-            <div class="kv">PM captured (yr): <strong>${pm ?? "—"} g</strong></div>
-            <div class="kv">Water retained (yr): <strong>${h2o ?? "—"} L</strong></div>
-            <div class="kv">Cooling savings (yr): <strong>${en ?? "—"} kWh</strong></div>
-            <div class="kv">Economic value: <strong>${val ?? "—"} €</strong></div>
-          </div>
-        `;
-        new maplibregl.Popup({ closeButton: true })
+        // Popup
+        new maplibregl.Popup({offset:12})
           .setLngLat(e.lngLat)
-          .setHTML(html)
+          .setHTML(`
+            <div class="popup">
+              <h3>Green area</h3>
+              <div class="kv">CO₂ (yr): <strong>${fmt(co2)}</strong> kg</div>
+              <div class="kv">PM (yr): <strong>${fmt(pm)}</strong> g</div>
+              <div class="kv">Water (yr): <strong>${fmt(h2o)}</strong> L</div>
+              <div class="kv">Cooling: <strong>${fmt(energy)}</strong> kWh</div>
+              <div class="kv">Economic value: <strong>€ ${fmt(econ)}</strong></div>
+            </div>`)
           .addTo(map);
+
+        // KPIs
+        setKPI('kpiCo2', co2, 'kg');
+        setKPI('kpiPm', pm, 'g');
+        setKPI('kpiH2o', h2o, 'L');
+        setKPI('kpiEnergy', energy, 'kWh');
+        setKPI('kpiEcon', econ, '€');
       });
 
-      map.on("mouseenter", "trees-fill", () => map.getCanvas().style.cursor = "pointer");
-      map.on("mouseleave", "trees-fill", () => map.getCanvas().style.cursor = "");
-
-      // Orthophoto toggle
-      const orthoToggle = document.getElementById("orthoToggle");
-      orthoToggle.addEventListener("change", () => {
-        map.setLayoutProperty("ortho", "visibility", orthoToggle.checked ? "visible" : "none");
+      // UI: toggles
+      const toggleAreas = document.getElementById('toggleAreas');
+      toggleAreas.addEventListener('change', () => {
+        map.setLayoutProperty('areas-fill', 'visibility', toggleAreas.checked ? 'visible' : 'none');
+      });
+      const toggleOutline = document.getElementById('toggleOutline');
+      toggleOutline.addEventListener('change', () => {
+        map.setLayoutProperty('areas-outline', 'visibility', toggleOutline.checked ? 'visible' : 'none');
       });
 
-      // "Zoom to orthophoto" -> just fly to Lombardy bounds/center
-      document.getElementById("zoomToOrtho").addEventListener("click", () => {
-        map.easeTo({ center: START_CENTER, zoom: 12, duration: 800 });
+      // Filter parser: econ>1000 co2>50 pm>10 (supports any order, spaces allowed)
+      const txt = document.getElementById('txtSearch');
+      function applyFilter(){
+        const q = (txt.value||'').toLowerCase().trim();
+        if(!q){ map.setFilter('areas-fill', null); return; }
+        const parts = q.split(/\s+/).filter(Boolean);
+        const filters = ['all'];
+        for(const part of parts){
+          const m = part.match(/(econ|co2|pm)\s*(>=|<=|>|<|=)\s*(\d+(?:\.\d+)?)/);
+          if(!m) continue;
+          const [, key, op, num] = m;
+          const field = key==='econ' ? ['coalesce',['get','economic_value_eur'],['get','energy_value_eur'],['get','co2_absorption_value_eur']]
+            : key==='co2' ? ['coalesce',['get','co2_sequestered_kg'],['get','co2_absorption_kg']]
+            : ['coalesce',['get','pm10_capture_g'],['get','pm25_capture_g']];
+          const val = parseFloat(num);
+          const cmp = op==='>'?['>',field,val]: op==='<'?['<',field,val]: op==='>='?['>=',field,val]: op==='<='?['<=',field,val]: ['==',field,val];
+          filters.push(cmp);
+        }
+        map.setFilter('areas-fill', filters.length>1 ? filters : null);
+      }
+      txt.addEventListener('input', applyFilter);
+
+      document.getElementById('btnReset').addEventListener('click', ()=>{
+        map.easeTo({center:[9.154940775917993,45.46043264982563], zoom:10.5});
+        txt.value=''; applyFilter();
+        toggleAreas.checked = true; map.setLayoutProperty('areas-fill','visibility','visible');
+        toggleOutline.checked = true; map.setLayoutProperty('areas-outline','visibility','visible');
+        setKPI('kpiCo2'); setKPI('kpiPm'); setKPI('kpiH2o'); setKPI('kpiEnergy'); setKPI('kpiEcon');
       });
     });
 
-    // Clean up protocol on unload
-    window.addEventListener("unload", () => protocol.removeAll());
+    // Helpers
+    function fmt(v){
+      if(v===undefined || v===null || v!==v) return '—';
+      const n = Number(v);
+      if(!isFinite(n)) return '—';
+      return n.toLocaleString(undefined, {maximumFractionDigits: 0});
+    }
+    function setKPI(id, v, unit){
+      const el = document.getElementById(id);
+      el.textContent = (v===undefined||v===null||v!==v) ? '—' : `${Number(v).toLocaleString(undefined,{maximumFractionDigits:0})}${unit?` ${unit}`:''}`;
+    }
+
+    // Clean up PMTiles protocol when unloading
+    window.addEventListener('unload', ()=> protocol.removeAll());
   </script>
 </body>
 </html>
