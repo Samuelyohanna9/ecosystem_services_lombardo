@@ -6,12 +6,13 @@
   <title>Urban Green • Lombardy</title>
   <link href="./vendor/maplibre-gl.css" rel="stylesheet" />
   <style>
-    :root{--bg:#0b1220;--panel:#0d1426;--muted:#8fa0bf;--text:#e6edf7;--green:#22c55e}
+    :root { --bg:#0b1220; --panel:#0d1426; --muted:#8fa0bf; --text:#e6edf7; --green:#22c55e }
     html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
     #app{display:grid;grid-template-columns:1fr;grid-template-rows:100vh}
     #map{position:relative}
     #mapCanvas{position:absolute;inset:0}
 
+    /* Sidebar (hidden until click) */
     #sidebar{
       position:absolute;left:0;top:0;width:min(380px,100%);height:100vh;
       background:var(--panel);border-right:1px solid #1f2937;padding:16px;overflow:auto;
@@ -26,6 +27,7 @@
     .kpi .t{color:var(--muted);font-size:12px}
     .kpi .v{font-size:16px;font-weight:600;margin-top:2px}
     .icons{display:flex;gap:8px;align-items:center}
+
     .footer{position:absolute;left:10px;bottom:8px;background:#0b1220cc;border:1px solid #1e2b4a;border-radius:8px;padding:6px 8px;font-size:12px;z-index:10}
     .maplibregl-ctrl-attrib{font-size:12px}
   </style>
@@ -53,6 +55,7 @@
           <div class="t">CO₂ absorption value (€)</div></div><div id="kpiCO2AbsVal" class="v">—</div></div>
 
         <div class="kpi"><div class="icons">
+          <!-- water drop -->
           <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M12 3c3 4 5 6.5 5 9a5 5 0 0 1-10 0c0-2.5 2-5 5-9z" fill="#60a5fa"/>
             <path d="M6 18c1.2.8 2.4.8 3.6 0 1.2.8 2.4.8 3.6 0 1.2.8 2.4.8 3.6 0" stroke="#bcd7ff" stroke-width="1.6" fill="none" stroke-linecap="round"/>
@@ -88,6 +91,7 @@
           <div class="t">Energy value (€)</div></div><div id="kpiEnergyVal" class="v">—</div></div>
 
         <div class="kpi"><div class="icons">
+          <!-- water drop -->
           <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M12 3c3 4 5 6.5 5 9a5 5 0 0 1-10 0c0-2.5 2-5 5-9z" fill="#60a5fa"/>
             <path d="M6 18c1.2.8 2.4.8 3.6 0 1.2.8 2.4.8 3.6 0 1.2.8 2.4.8 3.6 0" stroke="#bcd7ff" stroke-width="1.6" fill="none" stroke-linecap="round"/>
@@ -130,79 +134,99 @@
 
     map.addControl(new maplibregl.NavigationControl(),'top-right');
 
-    function addTreeIcon(m){
-      const svg = encodeURIComponent(
-        `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
-           <circle cx="32" cy="32" r="28" fill="#22c55e" stroke="#052e16" stroke-width="4"/>
-           <path d="M28 50h8v-8h6L32 22 20 42h8z" fill="#14532d"/>
-         </svg>`
-      );
-      const url = `data:image/svg+xml;charset=utf-8,${svg}`;
-      m.loadImage(url,(e,img)=>{ if(!e && !m.hasImage('tree-icon')) m.addImage('tree-icon', img,{pixelRatio:2}); });
-    }
-
     map.on('load', () => {
-      addTreeIcon(map);
+      // 1) Add a built-in “forest” icon so there are no missing-image errors
+      const forestSVG = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+          <defs><linearGradient id="g" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stop-color="#22c55e"/><stop offset="1" stop-color="#16a34a"/></linearGradient></defs>
+          <circle cx="32" cy="32" r="30" fill="#0b1220" opacity="0.12"/>
+          <path d="M32 10l10 14h-6l9 12h-7l8 10H16l8-10h-7l9-12h-6L30 10z" fill="url(#g)" stroke="#052e16" stroke-width="2" stroke-linejoin="round"/>
+          <rect x="30" y="42" width="4" height="12" rx="2" fill="#14532d"/>
+        </svg>`;
+      const img = new Image();
+      img.onload = () => map.addImage('tree-icon', img, {pixelRatio: 2});
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(forestSVG);
 
+      // 2) Add PMTiles vector source
       const archive = new pmtiles.PMTiles(PMTILES_URL);
       protocol.add(archive);
-
       map.addSource('areas', { type:'vector', url:`pmtiles://${PMTILES_URL}` });
 
+      // 3) Low-zoom discoverability: symbol layer (icon + tiny label)
       map.addLayer({
-        id:'areas-symbol', type:'symbol', source:'areas', 'source-layer':SOURCE_LAYER,
-        minzoom: 0, maxzoom: 12,
-        layout:{
-          'icon-image':'tree-icon',
-          'icon-size': ['interpolate',['linear'],['zoom'], 5, 0.35, 11.5, 0.6],
-          'icon-allow-overlap': true
+        id:'areas-symbol',
+        type:'symbol',
+        source:'areas',
+        'source-layer': SOURCE_LAYER,
+        minzoom: 5,
+        maxzoom: 12,        /* disappears when detailed polygons take over */
+        layout: {
+          'icon-image': 'tree-icon',
+          'icon-allow-overlap': true,
+          'icon-size': ['interpolate',['linear'], ['zoom'], 5, 0.6, 11, 1.0],
+          'text-field': 'Green area',
+          'text-size': ['interpolate',['linear'], ['zoom'], 6, 10, 11, 12],
+          'text-offset': [0, 1.2],
+          'text-anchor': 'top',
+          'text-optional': true
+        },
+        paint: {
+          'text-color': '#e6edf7',
+          'text-halo-width': 1.2,
+          'text-halo-color': '#0b1220'
         }
       });
 
+      // 4) High-zoom detail: fill + outline
       map.addLayer({
-        id:'areas-fill', type:'fill', source:'areas', 'source-layer':SOURCE_LAYER,
+        id:'areas-fill',
+        type:'fill',
+        source:'areas',
+        'source-layer': SOURCE_LAYER,
         minzoom: 12,
         paint:{ 'fill-color':'#22c55e','fill-opacity':0.45 }
       });
 
       map.addLayer({
-        id:'areas-outline', type:'line', source:'areas', 'source-layer':SOURCE_LAYER,
+        id:'areas-outline',
+        type:'line',
+        source:'areas',
+        'source-layer': SOURCE_LAYER,
         minzoom: 12,
         paint:{ 'line-color':'#052e16','line-width':1.2 }
       });
 
-      map.on('mouseenter','areas-fill',()=>map.getCanvas().style.cursor='pointer');
-      map.on('mouseleave','areas-fill',()=>map.getCanvas().style.cursor='');
-      map.on('mouseenter','areas-symbol',()=>map.getCanvas().style.cursor='pointer');
-      map.on('mouseleave','areas-symbol',()=>map.getCanvas().style.cursor='');
+      // Cursor hints
+      const hitLayers = ['areas-symbol','areas-fill'];
+      map.on('mouseenter', hitLayers, () => map.getCanvas().style.cursor='pointer');
+      map.on('mouseleave', hitLayers, () => map.getCanvas().style.cursor='');
 
+      // Click handler works regardless of which layer is visible
       function handleClick(e){
         const features = e.features && e.features.length
           ? e.features
-          : map.queryRenderedFeatures(e.point, { layers:['areas-fill','areas-outline','areas-symbol'] });
+          : map.queryRenderedFeatures(e.point, { layers: hitLayers });
         if (!features || !features.length) return;
-        const p = features[0].properties || {};
 
-        set('kpiO2',          p.o2_produced_kg,         'kg');
-        set('kpiCO2Seq',      p.co2_sequestered_kg,     'kg');
-        set('kpiCO2AbsVal',   p.co2_absorption_value_eur ?? p.co2_absorption_value, '€');
-        set('kpiH2OPrecip',   p.h2o_precipitation_l,    'L');
-        set('kpiCooling',     p.cooling_savings_kwh,    'kWh');
-        set('kpiPM10',        p.pm10_capture_g,         'g');
-        set('kpiCO2AbsKg',    p.co2_absorption_kg,      'kg');
-        set('kpiPM25',        p.pm25_capture_g,         'g');
-        set('kpiCO2StockKg',  p.co2_stock_kg,           'kg');
-        set('kpiCO2StockVal', p.co2_stock_value_eur,    '€');
-        set('kpiEnergyVal',   p.energy_value_eur,       '€');
-        set('kpiH2ORet',      p.h2o_retention_l,        'L');
+        const p = features[0].properties || {};
+        set('kpiO2',            p.o2_produced_kg,         'kg');
+        set('kpiCO2Seq',        p.co2_sequestered_kg,     'kg');
+        set('kpiCO2AbsVal',     p.co2_absorption_value_eur ?? p.co2_absorption_value, '€');
+        set('kpiH2OPrecip',     p.h2o_precipitation_l,    'L');
+        set('kpiCooling',       p.cooling_savings_kwh,    'kWh');
+        set('kpiPM10',          p.pm10_capture_g,         'g');
+        set('kpiCO2AbsKg',      p.co2_absorption_kg,      'kg');
+        set('kpiPM25',          p.pm25_capture_g,         'g');
+        set('kpiCO2StockKg',    p.co2_stock_kg,           'kg');
+        set('kpiCO2StockVal',   p.co2_stock_value_eur,    '€');
+        set('kpiEnergyVal',     p.energy_value_eur,       '€');
+        set('kpiH2ORet',        p.h2o_retention_l,        'L');
 
         document.getElementById('sidebar').classList.add('open');
       }
-
-      map.on('click','areas-fill', handleClick);
-      map.on('click','areas-outline', handleClick);
-      map.on('click','areas-symbol', handleClick);
-      map.on('click', handleClick);
+      map.on('click', hitLayers, handleClick);
+      map.on('click', handleClick); // fallback if clicking gaps
     });
 
     function parseNum(v){
