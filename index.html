@@ -109,7 +109,7 @@
       layers: [{ id:'osm', type:'raster', source:'osm' }]
     };
 
-    const map = new maplibregl.Map({ container:'mapCanvas', style, center:[9.19,45.46], zoom:10.5 });
+    const map = new maplibregl.Map({ container:'mapCanvas', style, center:[9.19,45.46], zoom: 3.0 });
     map.addControl(new maplibregl.NavigationControl(),'top-right');
 
     function parseNum(v){ if(v===undefined||v===null) return NaN; const s=(typeof v==='number')?String(v):String(v).replace(/\./g,'').replace(/,/g,'.'); const m=s.match(/-?[0-9]*\.?[0-9]+/); return m?parseFloat(m[0]):NaN; }
@@ -119,6 +119,7 @@
     window.addEventListener('unload',()=>protocol.removeAll());
 
     map.on('load', async () => {
+      // draw tree icon in-canvas
       const iconSize=64, c=document.createElement('canvas'); c.width=c.height=iconSize; const ctx=c.getContext('2d');
       ctx.beginPath(); ctx.arc(iconSize*0.5, iconSize*0.40, iconSize*0.28, 0, Math.PI*2); ctx.fillStyle='#22c55e'; ctx.shadowColor='rgba(0,0,0,.18)'; ctx.shadowBlur=4; ctx.fill(); ctx.shadowBlur=0;
       ctx.fillStyle='#6b4f2a'; ctx.fillRect(iconSize*0.47, iconSize*0.46, iconSize*0.06, iconSize*0.26);
@@ -128,42 +129,41 @@
       const archive = new pmtiles.PMTiles(PMTILES_URL);
       protocol.add(archive);
 
+      // read metadata to get layer id and bounds
       const header = await archive.getHeader();
       const meta = await archive.getMetadata();
-      let minZ = header.minZoom ?? 0;
-      let maxZ = header.maxZoom ?? 16;
       let layerId = "trees";
       try { const j = JSON.parse(meta.json || "{}"); if (j.vector_layers && j.vector_layers[0]) layerId = j.vector_layers[0].id; } catch(e){}
       try { if (meta.bounds){ const [w,s,e,n] = meta.bounds.split(",").map(Number); map.fitBounds([[w,s],[e,n]], {padding:40}); } } catch(e){}
 
       map.addSource('areas', { type:'vector', url:`pmtiles://${PMTILES_URL}` });
 
-      if (minZ > 0) {
-        map.addSource('worldHint', { type:'geojson', data:{ type:'FeatureCollection', features:[{ type:'Feature', properties:{name:'Lombardy green areas'}, geometry:{ type:'Point', coordinates:[9.19,45.46] } }] } });
-        map.addLayer({ id:'world-symbol', type:'symbol', source:'worldHint', maxzoom: minZ, layout:{
-          'icon-image':'tree-icon','icon-size':1.8,'icon-allow-overlap':true,'icon-ignore-placement':true,
-          'text-field':['get','name'],'text-font':['Open Sans Semibold','Arial Unicode MS Regular'],'text-size':14,'text-offset':[0,1.6],'text-anchor':'top'
-        }, paint:{'text-halo-color':'#0b1220','text-halo-width':1.2}});
-      }
-
-      map.addLayer({ id:'areas-symbol', type:'symbol', source:'areas', 'source-layer': layerId, minzoom: Math.max(minZ,0),
+      // symbols visible from zoom 0 (global)
+      map.addLayer({
+        id:'areas-symbol', type:'symbol', source:'areas', 'source-layer': layerId, minzoom: 0,
         layout:{ 'symbol-placement':'point','icon-image':'tree-icon','icon-allow-overlap':true,'icon-ignore-placement':true,'icon-pitch-alignment':'viewport',
-          'icon-size':['interpolate',['linear'],['zoom'], Math.max(minZ,0),1.6, 12,2.0, 16,2.6 ] } });
+          'icon-size':['interpolate',['linear'],['zoom'], 0,1.6, 6,1.9, 10,2.1, 14,2.4, 18,2.8 ] }
+      });
 
-      map.addLayer({ id:'areas-fill', type:'fill', source:'areas', 'source-layer': layerId, minzoom: Math.max(minZ+1, 11),
-        paint:{ 'fill-color':'#22c55e','fill-opacity':['interpolate',['linear'],['zoom'], Math.max(minZ+1,11),0.25, Math.max(minZ+3,13),0.45 ] } });
+      // polygons for detail at closer zooms
+      map.addLayer({ id:'areas-fill', type:'fill', source:'areas', 'source-layer': layerId, minzoom: 11,
+        paint:{ 'fill-color':'#22c55e','fill-opacity':['interpolate',['linear'],['zoom'], 11,0.25, 13,0.45 ] } });
 
-      map.addLayer({ id:'areas-outline', type:'line', source:'areas', 'source-layer': layerId, minzoom: Math.max(minZ+1, 11),
+      map.addLayer({ id:'areas-outline', type:'line', source:'areas', 'source-layer': layerId, minzoom: 11,
         paint:{ 'line-color':'#052e16','line-width':1.2 } });
 
+      // small hover label on symbols
       let hoverPopup;
       map.on('mouseenter','areas-symbol', e => {
         map.getCanvas().style.cursor='pointer';
-        const ll=e.lngLat; hoverPopup=new maplibregl.Popup({closeButton:false,closeOnClick:false,offset:12}).setLngLat(ll).setHTML('<div style="font:12px system-ui">Green area</div>').addTo(map);
+        const ll=e.lngLat;
+        hoverPopup=new maplibregl.Popup({closeButton:false,closeOnClick:false,offset:12})
+          .setLngLat(ll).setHTML('<div style="font:12px system-ui">Green area</div>').addTo(map);
       });
       map.on('mousemove','areas-symbol', e => { if(hoverPopup) hoverPopup.setLngLat(e.lngLat); });
       map.on('mouseleave','areas-symbol', () => { map.getCanvas().style.cursor=''; if(hoverPopup){hoverPopup.remove(); hoverPopup=null;} });
 
+      // sidebar on click
       function handleClick(e){
         const f = (e.features && e.features[0]) || map.queryRenderedFeatures(e.point, {layers:['areas-fill','areas-outline','areas-symbol']})[0];
         if(!f) return; const p=f.properties||{};
@@ -181,7 +181,6 @@
         setKPI('kpiH2ORet', p.h2o_retention_l, 'L');
         document.getElementById('sidebar').classList.add('open');
       }
-
       map.on('click','areas-fill',handleClick);
       map.on('click','areas-outline',handleClick);
       map.on('click','areas-symbol',handleClick);
