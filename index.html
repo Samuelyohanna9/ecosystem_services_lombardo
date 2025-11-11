@@ -11,7 +11,7 @@
     #app{display:grid;grid-template-columns:1fr;grid-template-rows:100vh}
     #map{position:relative}
     #mapCanvas{position:absolute;inset:0}
-    
+
     #sidebar{
       position:absolute;left:0;top:0;width:min(380px,100%);height:100vh;
       background:var(--panel);border-right:1px solid #1f2937;padding:16px;overflow:auto;
@@ -53,7 +53,6 @@
           <div class="t">CO₂ absorption value (€)</div></div><div id="kpiCO2AbsVal" class="v">—</div></div>
 
         <div class="kpi"><div class="icons">
-          
           <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M12 3c3 4 5 6.5 5 9a5 5 0 0 1-10 0c0-2.5 2-5 5-9z" fill="#60a5fa"/>
             <path d="M6 18c1.2.8 2.4.8 3.6 0 1.2.8 2.4.8 3.6 0 1.2.8 2.4.8 3.6 0" stroke="#bcd7ff" stroke-width="1.6" fill="none" stroke-linecap="round"/>
@@ -89,7 +88,6 @@
           <div class="t">Energy value (€)</div></div><div id="kpiEnergyVal" class="v">—</div></div>
 
         <div class="kpi"><div class="icons">
-          
           <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M12 3c3 4 5 6.5 5 9a5 5 0 0 1-10 0c0-2.5 2-5 5-9z" fill="#60a5fa"/>
             <path d="M6 18c1.2.8 2.4.8 3.6 0 1.2.8 2.4.8 3.6 0 1.2.8 2.4.8 3.6 0" stroke="#bcd7ff" stroke-width="1.6" fill="none" stroke-linecap="round"/>
@@ -132,48 +130,79 @@
 
     map.addControl(new maplibregl.NavigationControl(),'top-right');
 
+    function addTreeIcon(m){
+      const svg = encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+           <circle cx="32" cy="32" r="28" fill="#22c55e" stroke="#052e16" stroke-width="4"/>
+           <path d="M28 50h8v-8h6L32 22 20 42h8z" fill="#14532d"/>
+         </svg>`
+      );
+      const url = `data:image/svg+xml;charset=utf-8,${svg}`;
+      m.loadImage(url,(e,img)=>{ if(!e && !m.hasImage('tree-icon')) m.addImage('tree-icon', img,{pixelRatio:2}); });
+    }
+
     map.on('load', () => {
+      addTreeIcon(map);
+
       const archive = new pmtiles.PMTiles(PMTILES_URL);
       protocol.add(archive);
 
       map.addSource('areas', { type:'vector', url:`pmtiles://${PMTILES_URL}` });
 
-      map.addLayer({ id:'areas-fill', type:'fill', source:'areas', 'source-layer':SOURCE_LAYER,
-        paint:{ 'fill-color':'#22c55e','fill-opacity':0.45 } });
+      map.addLayer({
+        id:'areas-symbol', type:'symbol', source:'areas', 'source-layer':SOURCE_LAYER,
+        minzoom: 0, maxzoom: 12,
+        layout:{
+          'icon-image':'tree-icon',
+          'icon-size': ['interpolate',['linear'],['zoom'], 5, 0.35, 11.5, 0.6],
+          'icon-allow-overlap': true
+        }
+      });
 
-      map.addLayer({ id:'areas-outline', type:'line', source:'areas', 'source-layer':SOURCE_LAYER,
-        paint:{ 'line-color':'#052e16','line-width':1.2 } });
+      map.addLayer({
+        id:'areas-fill', type:'fill', source:'areas', 'source-layer':SOURCE_LAYER,
+        minzoom: 12,
+        paint:{ 'fill-color':'#22c55e','fill-opacity':0.45 }
+      });
+
+      map.addLayer({
+        id:'areas-outline', type:'line', source:'areas', 'source-layer':SOURCE_LAYER,
+        minzoom: 12,
+        paint:{ 'line-color':'#052e16','line-width':1.2 }
+      });
 
       map.on('mouseenter','areas-fill',()=>map.getCanvas().style.cursor='pointer');
       map.on('mouseleave','areas-fill',()=>map.getCanvas().style.cursor='');
+      map.on('mouseenter','areas-symbol',()=>map.getCanvas().style.cursor='pointer');
+      map.on('mouseleave','areas-symbol',()=>map.getCanvas().style.cursor='');
 
       function handleClick(e){
         const features = e.features && e.features.length
           ? e.features
-          : map.queryRenderedFeatures(e.point, { layers:['areas-fill','areas-outline'] });
+          : map.queryRenderedFeatures(e.point, { layers:['areas-fill','areas-outline','areas-symbol'] });
         if (!features || !features.length) return;
-
         const p = features[0].properties || {};
 
-        set('kpiO2',            p.o2_produced_kg,         'kg');
-        set('kpiCO2Seq',        p.co2_sequestered_kg,     'kg');
-        set('kpiCO2AbsVal',     p.co2_absorption_value_eur ?? p.co2_absorption_value, '€');
-        set('kpiH2OPrecip',     p.h2o_precipitation_l,    'L');
-        set('kpiCooling',       p.cooling_savings_kwh,    'kWh');
-        set('kpiPM10',          p.pm10_capture_g,         'g');
-        set('kpiCO2AbsKg',      p.co2_absorption_kg,      'kg');
-        set('kpiPM25',          p.pm25_capture_g,         'g');
-        set('kpiCO2StockKg',    p.co2_stock_kg,           'kg');
-        set('kpiCO2StockVal',   p.co2_stock_value_eur,    '€');
-        set('kpiEnergyVal',     p.energy_value_eur,       '€');
-        set('kpiH2ORet',        p.h2o_retention_l,        'L');
+        set('kpiO2',          p.o2_produced_kg,         'kg');
+        set('kpiCO2Seq',      p.co2_sequestered_kg,     'kg');
+        set('kpiCO2AbsVal',   p.co2_absorption_value_eur ?? p.co2_absorption_value, '€');
+        set('kpiH2OPrecip',   p.h2o_precipitation_l,    'L');
+        set('kpiCooling',     p.cooling_savings_kwh,    'kWh');
+        set('kpiPM10',        p.pm10_capture_g,         'g');
+        set('kpiCO2AbsKg',    p.co2_absorption_kg,      'kg');
+        set('kpiPM25',        p.pm25_capture_g,         'g');
+        set('kpiCO2StockKg',  p.co2_stock_kg,           'kg');
+        set('kpiCO2StockVal', p.co2_stock_value_eur,    '€');
+        set('kpiEnergyVal',   p.energy_value_eur,       '€');
+        set('kpiH2ORet',      p.h2o_retention_l,        'L');
 
         document.getElementById('sidebar').classList.add('open');
       }
 
       map.on('click','areas-fill', handleClick);
       map.on('click','areas-outline', handleClick);
-      map.on('click', handleClick); 
+      map.on('click','areas-symbol', handleClick);
+      map.on('click', handleClick);
     });
 
     function parseNum(v){
