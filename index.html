@@ -3,258 +3,109 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Lombardy Green Areas</title>
-
+  <title>Urban Green • Lombardy</title>
   <link href="./vendor/maplibre-gl.css" rel="stylesheet" />
   <style>
-    :root{
-      --bg:#f6f7fb; --text:#1f2937; --muted:#5b6577; --brand:#22c55e; --line:#e5e7eb; --accent:#0ea5e9; --warn:#f59e0b;
-    }
-    html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font:14px system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
-    #map{position:fixed;inset:0}
-    .sidebar{
-      position:fixed; top:0; left:0; height:100%; width:380px; max-width:90vw;
-      background:#fff; box-shadow: 0 10px 30px rgba(0,0,0,.15); border-right:1px solid var(--line);
-      transform: translateX(-100%); transition: transform .25s ease; z-index: 10; overflow:auto;
-    }
-    .sidebar.open{ transform: translateX(0); }
-    .s-head{display:flex; align-items:center; gap:12px; padding:16px 16px 8px; border-bottom:1px solid var(--line)}
-    .forest{
-      width:40px; height:40px; border-radius:50%; display:grid; place-items:center;
-      background: #e8f5ee; border:1px solid #cdebd8; color:#166534;
-    }
-    .title{font-weight:700; font-size:16px}
-    .sub{color:var(--muted); font-size:13px}
-    .section{padding:14px 16px; border-bottom:1px solid var(--line)}
-    .grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
-    .kv-pair{display:grid; grid-template-columns:120px 1fr; gap:8px; padding:6px 0}
-    .label{color:var(--muted)}
-    .kpis{display:grid; grid-template-columns:1fr; gap:10px}
-    .kpi{
-      display:grid; grid-template-columns:40px 1fr; gap:10px; align-items:center;
-      border:1px solid var(--line); border-radius:12px; padding:10px; background:#fff;
-    }
-    .kpi .val{font-weight:700; font-size:16px}
-    .kpi .cap{color:var(--muted); font-size:12px}
-    .icon{width:36px; height:36px; border-radius:50%; display:grid; place-items:center; background:#eef6ff; border:1px solid #d8e7fb}
-    .ico-co2{background:#e6f7f7; border-color:#c8eded}
-    .ico-pm{background:#f2f4f6}
-    .ico-h2o{background:#eef7ff}
-    .ico-energy{background:#fff7e6}
-    .ico-eur{background:#eff8ed}
-    .close{
-      position:absolute; right:10px; top:10px; width:32px; height:32px; border-radius:8px; border:1px solid var(--line);
-      background:#fff; display:grid; place-items:center; cursor:pointer;
-    }
-    .legend{
-      position:fixed; left:12px; bottom:12px; z-index:5; background:#fff; border:1px solid var(--line);
-      padding:6px 8px; border-radius:8px; font-size:12px; color:var(--muted)
-    }
-    .sw{width:12px;height:12px;border-radius:50%;background:var(--brand);display:inline-block;margin-right:6px;border:1px solid #14532d}
+    :root{--bg:#0b1220;--panel:#0d1426;--muted:#8fa0bf;--text:#e6edf7;--brand:#22c55e}
+    html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+    #app{display:grid;grid-template-columns:360px 1fr;grid-template-rows:100vh}
+    #map{position:relative}
+    #mapCanvas{position:absolute;inset:0}
+    #sidebar{background:var(--panel);border-right:1px solid #1f2937;padding:16px;overflow:auto;transform:translateX(-100%);transition:transform .25s ease}
+    #sidebar.open{transform:none}
+    h1{font-size:18px;margin:0 0 12px;display:flex;gap:10px;align-items:center}
+    .muted{color:var(--muted)}
+    .close{position:absolute;right:12px;top:10px;background:#0b1220;border:1px solid #1e2b4a;border-radius:8px;color:var(--text);padding:4px 8px;cursor:pointer}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .kpi{background:#091122;border:1px solid #203152;border-radius:12px;padding:12px}
+    .kpi .t{color:var(--muted);font-size:12px}
+    .kpi .v{font-size:16px;font-weight:600;margin-top:2px}
+    .icons{display:flex;gap:8px;align-items:center}
+    .footer{position:absolute;left:10px;bottom:8px;background:#0b1220cc;border:1px solid #1e2b4a;border-radius:8px;padding:6px 8px;font-size:12px}
+    .legend{position:absolute;left:10px;top:10px;background:#0b1220cc;border:1px solid #1e2b4a;border-radius:8px;padding:6px 8px;display:flex;gap:8px;align-items:center}
+    .sw{width:14px;height:14px;border-radius:50%;background:#22c55e;border:1px solid #052e16}
+    @media (max-width:900px){#app{grid-template-columns:1fr;grid-template-rows:1fr}#sidebar{position:absolute;z-index:10;width:min(420px,100%);height:100vh}}
     .maplibregl-ctrl-attrib{font-size:12px}
-    .maplibregl-popup-content{border-radius:10px}
   </style>
 </head>
 <body>
-  <div id="map"></div>
-
-  <aside id="sidebar" class="sidebar">
-    <button id="btnClose" class="close" aria-label="Close">✕</button>
-    <div class="s-head">
-      <div class="forest" aria-hidden="true">
-        <!-- Forest symbol -->
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-          <path d="M7 13 12 3l5 10h-3l3 5H7l3-5H7z" stroke="currentColor" stroke-width="1.5" fill="none"/>
-        </svg>
-      </div>
-      <div>
-        <div class="title" id="sb_title">Green area</div>
-        <div class="sub" id="sb_sub">Click a polygon to view details</div>
-      </div>
-    </div>
-
-    <div class="section" id="sb_meta">
-      <div class="kv-pair"><div class="label">Site name</div><div id="sb_site">—</div></div>
+  <div id="app">
+    <aside id="sidebar">
+      <button class="close" id="btnClose">Close</button>
+      <h1>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="11" fill="#0ea5e9" stroke="#052e16"/><path d="M8 17c0-2.8 1.8-5 4-5s4 2.2 4 5h-8Z" fill="#22c55e"/><path d="M12 6c1.7 0 3 1.3 3 3 0 .7-.3 1.4-.7 1.9l-.7.8-.6.6-.7-.6-.7-.8c-.4-.5-.6-1.2-.6-1.9 0-1.7 1.3-3 3-3Z" fill="#14532d"/></svg>
+        Lombardy Green Area
+      </h1>
       <div class="grid">
-        <div class="kv-pair"><div class="label">Tree number</div><div id="sb_tree">—</div></div>
-        <div class="kv-pair"><div class="label">Crown diameter</div><div id="sb_crown">—</div></div>
-        <div class="kv-pair"><div class="label">Height</div><div id="sb_height">—</div></div>
-        <div class="kv-pair"><div class="label">Stem circumference</div><div id="sb_circ">—</div></div>
+        <div class="kpi"><div class="icons">
+          <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#67e8f9"/><text x="7" y="14" font-size="8" font-family="monospace">CO2</text></svg>
+          <div class="t">CO₂ sequestered (yr)</div></div><div id="kpiCo2" class="v">—</div></div>
+        <div class="kpi"><div class="icons">
+          <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#d1d5db"/><text x="7" y="14" font-size="8" font-family="monospace">PM</text></svg>
+          <div class="t">PM captured (yr)</div></div><div id="kpiPm" class="v">—</div></div>
+        <div class="kpi"><div class="icons">
+          <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#60a5fa"/><path d="M12 6c-3 4-3 8 0 12" stroke="#0b1220" stroke-width="2" fill="none"/></svg>
+          <div class="t">Water retained (yr)</div></div><div id="kpiH2o" class="v">—</div></div>
+        <div class="kpi"><div class="icons">
+          <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#facc15"/><path d="M12 5l3 7h-3l2 7-6-9h3l-2-5z" fill="#0b1220"/></svg>
+          <div class="t">Cooling (kWh/yr)</div></div><div id="kpiEnergy" class="v">—</div></div>
+        <div class="kpi"><div class="icons">
+          <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#fde68a"/><text x="9" y="15" font-size="10" font-family="monospace">€</text></svg>
+          <div class="t">Economic value (€)</div></div><div id="kpiEcon" class="v">—</div></div>
+        <div class="kpi"><div class="icons">
+          <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#86efac"/><text x="8" y="14" font-size="9" font-family="monospace">O₂</text></svg>
+          <div class="t">O₂ produced (yr)</div></div><div id="kpiO2" class="v">—</div></div>
       </div>
-    </div>
-
-    <div class="section">
-      <div class="kpis">
-        <div class="kpi">
-          <div class="icon ico-co2">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="8" stroke="#0891b2" stroke-width="1.5"/>
-              <text x="8" y="16" font-size="7" fill="#0891b2">CO₂</text>
-            </svg>
-          </div>
-          <div>
-            <div class="val" id="k_co2">—</div>
-            <div class="cap">CO₂ sequestered (yr)</div>
-          </div>
-        </div>
-
-        <div class="kpi">
-          <div class="icon ico-pm">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <rect x="5" y="5" width="14" height="14" rx="3" stroke="#6b7280" stroke-width="1.5"/>
-              <text x="8" y="16" font-size="7" fill="#6b7280">PM</text>
-            </svg>
-          </div>
-          <div>
-            <div class="val" id="k_pm">—</div>
-            <div class="cap">PM captured (yr)</div>
-          </div>
-        </div>
-
-        <div class="kpi">
-          <div class="icon ico-h2o">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M12 4c2.5 3 6 6.4 6 9a6 6 0 1 1-12 0c0-2.6 3.5-6 6-9z" stroke="#0284c7" stroke-width="1.5"/>
-            </svg>
-          </div>
-          <div>
-            <div class="val" id="k_h2o">—</div>
-            <div class="cap">Water retained (yr)</div>
-          </div>
-        </div>
-
-        <div class="kpi">
-          <div class="icon ico-energy">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M13 3 5 14h6l-1 7 8-11h-6l1-7z" stroke="#d97706" stroke-width="1.5" fill="none"/>
-            </svg>
-          </div>
-          <div>
-            <div class="val" id="k_energy">—</div>
-            <div class="cap">Cooling (kWh/yr)</div>
-          </div>
-        </div>
-
-        <div class="kpi">
-          <div class="icon ico-eur">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M17 6a6 6 0 1 0 0 12M7 10h8M7 14h8" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-          </div>
-          <div>
-            <div class="val" id="k_econ">—</div>
-            <div class="cap">Economic value (€)</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </aside>
-
-  <div class="legend"><span class="sw"></span>Green areas</div>
-
+    </aside>
+    <main id="map">
+      <div class="legend"><span class="sw"></span><span class="muted">Green areas</span></div>
+      <div id="mapCanvas"></div>
+      <div class="footer">© You • OpenStreetMap • MapLibre • PMTiles</div>
+    </main>
+  </div>
   <script src="./vendor/maplibre-gl.js"></script>
   <script src="./vendor/pmtiles.js"></script>
+  <script src="./vendor/basemaps.js"></script>
   <script>
     const PMTILES_URL = "https://pub-df9eaf452da44f0ea2cbbcb1a6cd55ac.r2.dev/trees.pmtiles";
     const SOURCE_LAYER = "trees";
-
     const protocol = new pmtiles.Protocol();
-    maplibregl.addProtocol("pmtiles", protocol.tile);
-
-    const style = {
-      version: 8,
-      glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
-      sources: {
-        osm: {
-          type: "raster",
-          tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-          tileSize: 256,
-          attribution: "© OpenStreetMap contributors"
-        }
-      },
-      layers: [{ id: "osm", type: "raster", source: "osm" }]
-    };
-
-    const map = new maplibregl.Map({
-      container: "map",
-      style,
-      center: [9.154940775917993, 45.46043264982563],
-      zoom: 10.5
-    });
-    map.addControl(new maplibregl.NavigationControl(), "top-right");
-
-    map.on("load", async () => {
-      const archive = new pmtiles.PMTiles(PMTILES_URL);
-      protocol.add(archive);
-
-      map.addSource("areas", { type: "vector", url: `pmtiles://${PMTILES_URL}` });
-
-      map.addLayer({
-        id: "areas-fill",
-        type: "fill",
-        source: "areas",
-        "source-layer": SOURCE_LAYER,
-        paint: { "fill-color": "#22c55e", "fill-opacity": 0.45 }
-      });
-
-      map.addLayer({
-        id: "areas-outline",
-        type: "line",
-        source: "areas",
-        "source-layer": SOURCE_LAYER,
-        paint: { "line-color": "#14532d", "line-width": 1.2 }
-      });
-
-      map.on("mouseenter", "areas-fill", () => map.getCanvas().style.cursor = "pointer");
-      map.on("mouseleave", "areas-fill", () => map.getCanvas().style.cursor = "");
-
-      map.on("click", "areas-fill", (e) => {
-        const f = e.features[0];
-        const p = f.properties || {};
-
-        const site  = p.site_name ?? "";
-        const treeN = p.tree_number ?? "—";
-        const crown = nfmt(p.crown_diameter, " m");
-        const height= nfmt(p.height, " m");
-        const circ  = nfmt(p.stem_circumference, " cm");
-
-        const co2   = pick(p.co2_sequestered_kg, p.co2_absorption_kg);
-        const pm    = pick(p.pm10_capture_g, p.pm25_capture_g);
-        const h2o   = pick(p.h2o_retention_l, p.h2o_precipitation_l);
-        const energy= p.cooling_savings_kwh;
-        const econ  = pick(p.economic_value_eur, p.energy_value_eur, p.co2_absorption_value_eur);
-
-        document.getElementById("sb_title").textContent = "Green area";
-        document.getElementById("sb_sub").textContent   = site || "—";
-        document.getElementById("sb_site").textContent  = site || "—";
-        document.getElementById("sb_tree").textContent  = treeN;
-        document.getElementById("sb_crown").textContent = crown;
-        document.getElementById("sb_height").textContent= height;
-        document.getElementById("sb_circ").textContent  = circ;
-
-        setVal("k_co2",   co2,   " kg");
-        setVal("k_pm",    pm,    " g");
-        setVal("k_h2o",   h2o,   " L");
-        setVal("k_energy",energy," kWh");
-        setVal("k_econ",  econ,  " €", true);
-
-        openSidebar();
+    maplibregl.addProtocol('pmtiles', protocol.tile);
+    const style = {version:8,glyphs:"https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",sources:{osm:{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,attribution:'© OpenStreetMap contributors'}},layers:[{id:'osm',type:'raster',source:'osm'}]};
+    const map = new maplibregl.Map({container:'mapCanvas',style,center:[9.154940775917993,45.46043264982563],zoom:10.5});
+    map.addControl(new maplibregl.NavigationControl(),'top-right');
+    map.on('load',()=>{
+      const archive=new pmtiles.PMTiles(PMTILES_URL);protocol.add(archive);
+      map.addSource('areas',{type:'vector',url:`pmtiles://${PMTILES_URL}`});
+      map.addLayer({id:'areas-fill',type:'fill',source:'areas','source-layer':SOURCE_LAYER,paint:{'fill-color':'#22c55e','fill-opacity':0.45}});
+      map.addLayer({id:'areas-outline',type:'line',source:'areas','source-layer':SOURCE_LAYER,paint:{'line-color':'#052e16','line-width':1.2}});
+      map.on('mouseenter','areas-fill',()=>map.getCanvas().style.cursor='pointer');
+      map.on('mouseleave','areas-fill',()=>map.getCanvas().style.cursor='');
+      map.on('click','areas-fill',(e)=>{
+        const p=(e.features[0]&&e.features[0].properties)||{};
+        const co2=p.co2_sequestered_kg??p.co2_absorption_kg;
+        const pm=p.pm10_capture_g??p.pm25_capture_g;
+        const h2o=p.h2o_retention_l??p.h2o_precipitation_l;
+        const energy=p.cooling_savings_kwh;
+        const econ=p.economic_value_eur??p.energy_value_eur??p.co2_absorption_value_eur;
+        const o2=p.o2_produced_kg;
+        setKPI('kpiCo2',co2,'kg');
+        setKPI('kpiPm',pm,'g');
+        setKPI('kpiH2o',h2o,'L');
+        setKPI('kpiEnergy',energy,'kWh');
+        setKPI('kpiEcon',econ,'€');
+        setKPI('kpiO2',o2,'kg');
+        document.getElementById('sidebar').classList.add('open');
       });
     });
-
-    const sb = document.getElementById("sidebar");
-    document.getElementById("btnClose").addEventListener("click", closeSidebar);
-    function openSidebar(){ sb.classList.add("open"); }
-    function closeSidebar(){ sb.classList.remove("open"); }
-    function pick(...vals){ for(const v of vals){ if(v !== undefined && v !== null && v === v) return Number(v); } return null; }
-    function nfmt(v, unit=""){ if(v===undefined||v===null||v!==v) return "—"; return Number(v).toLocaleString(undefined,{maximumFractionDigits:0}) + unit; }
-    function setVal(id, v, unit="", euro=false){
-      const el = document.getElementById(id);
-      if(v===undefined||v===null||v!==v){ el.textContent = "—"; return; }
-      const n = Number(v);
-      el.textContent = euro ? n.toLocaleString(undefined,{maximumFractionDigits:0}) + unit
-                            : n.toLocaleString(undefined,{maximumFractionDigits:0}) + unit;
+    function setKPI(id,v,unit){
+      const el=document.getElementById(id);
+      if(v===undefined||v===null||v!==v){el.textContent='—';return}
+      const n=Number(v); if(!isFinite(n)){el.textContent='—';return}
+      el.textContent=n.toLocaleString(undefined,{maximumFractionDigits:0})+(unit?` ${unit}`:'');
     }
+    document.getElementById('btnClose').addEventListener('click',()=>document.getElementById('sidebar').classList.remove('open'));
+    window.addEventListener('unload',()=>protocol.removeAll());
   </script>
 </body>
 </html>
