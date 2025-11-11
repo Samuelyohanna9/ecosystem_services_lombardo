@@ -7,67 +7,94 @@
 
   <link href="./vendor/maplibre-gl.css" rel="stylesheet" />
   <style>
-    :root { --bg:#0b1220; --panel:#0d1426; --muted:#8fa0bf; --text:#e6edf7; --brand:#22c55e; }
+    :root{
+      --bg:#0b1220; --panel:#0d1426; --muted:#97a6c6; --text:#e6edf7; --brand:#22c55e; --line:#173b2a;
+    }
     html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
-    #app{display:grid;grid-template-columns:360px 1fr;grid-template-rows:100vh}
-    #sidebar{background:var(--panel);border-right:1px solid #1f2937;padding:14px 14px 18px;overflow:auto}
-    #map{position:relative} #mapCanvas{position:absolute;inset:0}
-    h1{font-size:18px;margin:0 0 4px} .muted{color:var(--muted)}
-    .controls{display:flex;gap:8px;align-items:center;margin:10px 0 12px}
-    .pill{padding:6px 10px;border:1px solid #203152;border-radius:999px;background:#091122}
-    .search{width:100%;padding:8px 10px;border:1px solid #203152;border-radius:10px;background:#091122;color:var(--text)}
-    .kbd{font:12px/1.2 ui-monospace,Menlo,Consolas;color:var(--muted);margin-top:6px}
-    .card{background:#0b1220;border:1px solid #1e2b4a;border-radius:12px;padding:12px;margin:12px 0}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-    .kpi{background:#091122;border:1px solid #203152;border-radius:10px;padding:10px}
-    .kpi .v{font-size:16px;font-weight:600}
-    .footer{position:absolute;left:10px;bottom:8px;background:#0b1220cc;border:1px solid #1e2b4a;border-radius:8px;padding:6px 8px;font-size:12px}
-    .legend{display:flex;gap:10px;align-items:center;margin-top:6px}
-    .sw{width:14px;height:14px;border-radius:50%;background:#22c55e;border:1px solid #052e16}
+    #map{position:fixed;inset:0}
     .maplibregl-ctrl-attrib{font-size:12px}
-    .maplibregl-popup-content{background:#0b1220;color:var(--text);border:1px solid #1e2b4a;border-radius:12px}
-    .maplibregl-popup-tip{border-top-color:#1e2b4a}
-    .popup h3{margin:0 0 6px;font-size:15px;display:flex;gap:8px;align-items:center}
-    .popup .kv{color:var(--muted);margin:2px 0}
-    @media (max-width:900px){#app{grid-template-columns:1fr;grid-template-rows:280px 1fr}#sidebar{grid-row:1}#map{grid-row:2}}
+
+    /* Sidebar */
+    #sidebar{
+      position:fixed; left:0; top:0; bottom:0; width:380px; max-width:94vw;
+      background:var(--panel); border-right:1px solid #18253d; box-shadow: 6px 0 24px rgba(0,0,0,.25);
+      transform:translateX(-102%); transition:transform .25s ease; z-index:10; overflow:auto;
+      display:flex; flex-direction:column;
+    }
+    #sidebar.open{ transform:none; }
+    .sb-header{display:flex; gap:10px; align-items:center; padding:14px 16px 10px; border-bottom:1px solid #18253d}
+    .forest-badge{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:#0b172b;border:1px solid #22365e}
+    .forest-badge svg{width:22px;height:22px}
+    .title-wrap{flex:1}
+    .title{margin:0;font-size:18px}
+    .subtitle{margin:0;color:var(--muted);font-size:13px}
+    .btn-close{appearance:none;border:0;background:#0b172b;color:var(--muted);border:1px solid #22365e;border-radius:10px;padding:6px 10px;cursor:pointer}
+
+    .section{padding:14px 16px}
+    .kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .kpi{background:#0b1220;border:1px solid #1b2b4b;border-radius:12px;padding:10px;display:flex;gap:10px}
+    .kpi svg{width:22px;height:22px;flex:0 0 auto;opacity:.9}
+    .kpi .t{color:var(--muted);font-size:12px}
+    .kpi .v{font-weight:700;font-size:16px}
+    .row{display:grid;grid-template-columns:120px 1fr;gap:8px;margin:6px 0}
+    .muted{color:var(--muted)}
+    .footer{position:fixed;left:10px;bottom:8px;background:#0b1220cc;border:1px solid #1e2b4a;border-radius:8px;padding:6px 8px;font-size:12px;color:var(--muted);z-index:5}
+
+    @media (max-width:720px){
+      .kpis{grid-template-columns:1fr}
+    }
   </style>
 </head>
 <body>
-  <div id="app">
-    <aside id="sidebar">
-      <h1>Lombardy Green Areas</h1>
-      <div class="muted">OSM basemap • PMTiles on Cloudflare • Click polygons for details.</div>
+  <div id="map"></div>
 
-      <div class="controls">
-        <button id="btnReset" class="pill" title="Reset view">Reset</button>
+  <aside id="sidebar" aria-hidden="true">
+    <div class="sb-header">
+      <div class="forest-badge" aria-hidden="true">
+        <!-- forest icon -->
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 2l4 6H8l4-6Zm0 4l6 9H6l6-9Zm0 7l5 8H7l5-8Z" fill="#22c55e"/><path d="M12 2l4 6H8l4-6Zm0 4l6 9H6l6-9Zm0 7l5 8H7l5-8Z" stroke="#0f291e" stroke-opacity=".7"/></svg>
       </div>
+      <div class="title-wrap">
+        <h1 class="title" id="sb-title">Green area</h1>
+        <p class="subtitle" id="sb-sub">Click a polygon to see details</p>
+      </div>
+      <button class="btn-close" id="sb-close" type="button">✕</button>
+    </div>
 
-      <input id="txtSearch" class="search" type="text"
-             placeholder="Filter: econ>1000 co2>50 pm>10 h2o>1000 energy>5 o2>1 stock>100 pmval>5" />
-      <div class="kbd">Use space to combine rules (e.g. <code>econ&gt;500 co2&gt;20</code>).</div>
+    <div class="section">
+      <div class="row"><div class="muted">Site</div><div id="sb-site">—</div></div>
+    </div>
 
-      <div class="card">
-        <div class="grid">
-          <div class="kpi"><div class="t muted">CO₂ sequestered (yr)</div><div id="kpiCo2" class="v">—</div></div>
-          <div class="kpi"><div class="t muted">PM captured (yr)</div><div id="kpiPm" class="v">—</div></div>
-          <div class="kpi"><div class="t muted">Water retained (yr)</div><div id="kpiH2o" class="v">—</div></div>
-          <div class="kpi"><div class="t muted">Cooling (kWh/yr)</div><div id="kpiEnergy" class="v">—</div></div>
-          <div class="kpi" style="grid-column:1/-1"><div class="t muted">Economic value (€)</div><div id="kpiEcon" class="v">—</div></div>
+    <div class="section">
+      <div class="kpis">
+        <div class="kpi">
+          <svg viewBox="0 0 24 24"><path d="M7 20a5 5 0 1 1 10 0H7Z" fill="#22c55e"/><circle cx="9" cy="10" r="1.5" fill="#22c55e"/><circle cx="15" cy="10" r="1.5" fill="#22c55e"/></svg>
+          <div><div class="t">CO₂ sequestered (yr)</div><div class="v" id="k_co2">—</div></div>
+        </div>
+        <div class="kpi">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#22c55e"/><path d="M12 6v12M6 12h12" stroke="#0f291e" stroke-width="2"/></svg>
+          <div><div class="t">PM captured (yr)</div><div class="v" id="k_pm">—</div></div>
+        </div>
+        <div class="kpi">
+          <svg viewBox="0 0 24 24"><path d="M5 10c3 0 3-6 7-6s4 6 7 6v7a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3v-7Z" fill="#22c55e"/></svg>
+          <div><div class="t">Water retained (yr)</div><div class="v" id="k_h2o">—</div></div>
+        </div>
+        <div class="kpi">
+          <svg viewBox="0 0 24 24"><path d="M4 17h16M6 13h12M8 9h8M10 5h4" stroke="#22c55e" stroke-width="2"/></svg>
+          <div><div class="t">Cooling (kWh/yr)</div><div class="v" id="k_energy">—</div></div>
+        </div>
+        <div class="kpi" style="grid-column:1/-1">
+          <svg viewBox="0 0 24 24"><path d="M12 3l2.5 5 5.5.8-4 3.9.9 5.5-4.9-2.6L7.1 18l.9-5.5-4-3.9L9.5 8 12 3Z" fill="#22c55e"/></svg>
+          <div><div class="t">Economic value (€)</div><div class="v" id="k_econ">—</div></div>
         </div>
       </div>
+    </div>
+  </aside>
 
-      <div class="legend"><span class="sw"></span><span class="muted">Green areas</span></div>
-    </aside>
-
-    <main id="map">
-      <div id="mapCanvas"></div>
-      <div class="footer">© You • OpenStreetMap • MapLibre • PMTiles</div>
-    </main>
-  </div>
+  <div class="footer">© You • OpenStreetMap • MapLibre • PMTiles</div>
 
   <script src="./vendor/maplibre-gl.js"></script>
   <script src="./vendor/pmtiles.js"></script>
-  <script src="./vendor/basemaps.js"></script>
   <script>
     const PMTILES_URL = "https://pub-df9eaf452da44f0ea2cbbcb1a6cd55ac.r2.dev/trees.pmtiles";
     const SOURCE_LAYER = "trees";
@@ -75,31 +102,31 @@
     const protocol = new pmtiles.Protocol();
     maplibregl.addProtocol("pmtiles", protocol.tile);
 
-    const style = {
-      version: 8,
-      glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
-      sources: {
-        osm: {
-          type: "raster",
-          tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-          tileSize: 256,
-          attribution: "© OpenStreetMap contributors"
-        }
-      },
-      layers: [{ id: "osm", type: "raster", source: "osm" }]
-    };
-
     const map = new maplibregl.Map({
-      container: "mapCanvas",
-      style,
+      container: "map",
+      style: {
+        version: 8,
+        glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
+        sources: {
+          osm: {
+            type: "raster",
+            tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+            tileSize: 256,
+            attribution: "© OpenStreetMap contributors"
+          }
+        },
+        layers: [{ id: "osm", type: "raster", source: "osm" }]
+      },
       center: [9.154940775917993, 45.46043264982563],
       zoom: 10.5
     });
+
     map.addControl(new maplibregl.NavigationControl(), "top-right");
 
-    map.on("load", async () => {
+    map.on("load", () => {
       const archive = new pmtiles.PMTiles(PMTILES_URL);
       protocol.add(archive);
+
       map.addSource("areas", { type: "vector", url: `pmtiles://${PMTILES_URL}` });
 
       map.addLayer({
@@ -115,81 +142,60 @@
         type: "line",
         source: "areas",
         "source-layer": SOURCE_LAYER,
-        paint: { "line-color": "#052e16", "line-width": 1.2 }
+        paint: { "line-color": "#0f291e", "line-width": 1.2 }
       });
 
       map.on("mouseenter", "areas-fill", () => map.getCanvas().style.cursor = "pointer");
       map.on("mouseleave", "areas-fill", () => map.getCanvas().style.cursor = "");
 
       map.on("click", "areas-fill", (e) => {
-        const p = (e.features[0] && e.features[0].properties) || {};
-        const co2 = nz(p.co2_sequestered_kg, p.co2_absorption_kg);
-        const pm  = nz(p.pm10_capture_g, p.pm25_capture_g);
-        const h2o = nz(p.h2o_retention_l, p.h2o_precipitation_l);
-        const energy = p.cooling_savings_kwh;
-        const econ = nz(p.economic_value_eur, p.energy_value_eur, p.co2_absorption_value_eur);
+        const p = (e.features && e.features[0] && e.features[0].properties) || {};
+        const site = p.site_name || p.name || "Green area";
+        const co2 = coalesceNum(p.co2_sequestered_kg, p.co2_absorption_kg);
+        const pm  = coalesceNum(p.pm10_capture_g, p.pm25_capture_g);
+        const h2o = coalesceNum(p.h2o_retention_l, p.h2o_precipitation_l);
+        const energy = coalesceNum(p.cooling_savings_kwh);
+        const econ = coalesceNum(p.economic_value_eur, p.energy_value_eur, p.co2_absorption_value_eur);
 
-        new maplibregl.Popup({ offset: 12 })
-          .setLngLat(e.lngLat)
-          .setHTML(
-            `<div class="popup">
-               <h3>🌲 Green area</h3>
-               <div class="kv">CO₂ (year): <strong>${fmt(co2)}</strong> kg</div>
-               <div class="kv">PM (year): <strong>${fmt(pm)}</strong> g</div>
-               <div class="kv">Water (year): <strong>${fmt(h2o)}</strong> L</div>
-               <div class="kv">Cooling: <strong>${fmt(energy)}</strong> kWh</div>
-               <div class="kv">Economic value: <strong>€ ${fmt(econ)}</strong></div>
-             </div>`
-          )
-          .addTo(map);
-
-        setKPI("kpiCo2", co2, "kg");
-        setKPI("kpiPm", pm, "g");
-        setKPI("kpiH2o", h2o, "L");
-        setKPI("kpiEnergy", energy, "kWh");
-        setKPI("kpiEcon", econ, "€");
-      });
-
-      const txt = document.getElementById("txtSearch");
-      function fieldExpr(key){
-        switch(key){
-          case "econ": return ["coalesce",["get","economic_value_eur"],["get","energy_value_eur"],["get","co2_absorption_value_eur"]];
-          case "co2":  return ["coalesce",["get","co2_sequestered_kg"],["get","co2_absorption_kg"]];
-          case "pm":   return ["coalesce",["get","pm10_capture_g"],["get","pm25_capture_g"]];
-          case "h2o":  return ["coalesce",["get","h2o_retention_l"],["get","h2o_precipitation_l"]];
-          case "energy": return ["get","cooling_savings_kwh"];
-          case "o2":   return ["get","o2_produced_kg"];
-          case "stock": return ["get","co2_stock_kg"];
-          case "pmval": return ["get","pm10_value_eur"];
-          default: return null;
-        }
-      }
-      function applyFilter(){
-        const q = (txt.value||"").toLowerCase().trim();
-        if(!q){ map.setFilter("areas-fill", null); return; }
-        const filters = ["all"];
-        for(const part of q.split(/\s+/).filter(Boolean)){
-          const m = part.match(/(econ|co2|pm|h2o|energy|o2|stock|pmval)\s*(>=|<=|>|<|=)\s*(\d+(?:\.\d+)?)/);
-          if(!m) continue;
-          const [,key,op,num] = m, field = fieldExpr(key);
-          if(!field) continue;
-          const v = parseFloat(num);
-          filters.push(op===">"? [">",field,v] : op==="<" ? ["<",field,v] : op===">=" ? [">=",field,v] : op==="<=" ? ["<=",field,v] : ["==",field,v]);
-        }
-        map.setFilter("areas-fill", filters.length>1 ? filters : null);
-      }
-      txt.addEventListener("input", applyFilter);
-
-      document.getElementById("btnReset").addEventListener("click", () => {
-        map.easeTo({center:[9.154940775917993,45.46043264982563], zoom:10.5});
-        txt.value=""; applyFilter();
-        setKPI("kpiCo2"); setKPI("kpiPm"); setKPI("kpiH2o"); setKPI("kpiEnergy"); setKPI("kpiEcon");
+        openSidebar({
+          title: site,
+          subtitle: "Lombardy • Urban Green",
+          site,
+          co2, pm, h2o, energy, econ
+        });
       });
     });
 
-    function nz(){ for (let i=0;i<arguments.length;i++){ const n = Number(arguments[i]); if(isFinite(n)) return n; } return null; }
-    function fmt(v){ if(v===undefined||v===null||v!==v) return "—"; const n=Number(v); return isFinite(n)? n.toLocaleString(undefined,{maximumFractionDigits:0}) : "—"; }
-    function setKPI(id, v, unit){ const el=document.getElementById(id); el.textContent=(v===undefined||v===null||v!==v)?"—":`${Number(v).toLocaleString(undefined,{maximumFractionDigits:0})}${unit?` ${unit}`:""}`; }
+    function coalesceNum(...vals){
+      for (const v of vals){ if (v !== undefined && v !== null && v === v && v !== "") return Number(v); }
+      return null;
+    }
+    function fmt(n, unit){
+      if (n === null) return "—";
+      const s = Number(n).toLocaleString(undefined, { maximumFractionDigits: 0 });
+      return unit ? `${s} ${unit}` : s;
+    }
+
+    const sb = document.getElementById("sidebar");
+    const sbClose = document.getElementById("sb-close");
+
+    function openSidebar(d){
+      document.getElementById("sb-title").textContent = d.title || "Green area";
+      document.getElementById("sb-sub").textContent = d.subtitle || "";
+      document.getElementById("sb-site").textContent = d.site || "—";
+      document.getElementById("k_co2").textContent = fmt(d.co2, "kg");
+      document.getElementById("k_pm").textContent = fmt(d.pm, "g");
+      document.getElementById("k_h2o").textContent = fmt(d.h2o, "L");
+      document.getElementById("k_energy").textContent = fmt(d.energy, "kWh");
+      document.getElementById("k_econ").textContent = d.econ===null ? "—" : `€ ${fmt(d.econ)}`;
+      sb.classList.add("open");
+      sb.setAttribute("aria-hidden","false");
+    }
+    sbClose.addEventListener("click", () => {
+      sb.classList.remove("open");
+      sb.setAttribute("aria-hidden","true");
+    });
+
     window.addEventListener("unload", ()=> protocol.removeAll());
   </script>
 </body>
