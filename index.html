@@ -12,6 +12,7 @@
     #map{position:relative}
     #mapCanvas{position:absolute;inset:0}
 
+    /* Sidebar (hidden until a feature is clicked) */
     #sidebar{
       position:absolute;left:0;top:0;width:min(380px,100%);height:100vh;
       background:var(--panel);border-right:1px solid #1f2937;padding:16px;overflow:auto;
@@ -38,8 +39,7 @@
       <h1>
         <span aria-hidden="true">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="11" fill="#0ea5e9"/>
-            <path d="M7 16c0-3 2.1-5.5 5-5.5s5 2.5 5 5.5H7Z" fill="#22c55e"/>
+            <circle cx="12" cy="12" r="11" fill="#0ea5e9"/><path d="M7 16c0-3 2.1-5.5 5-5.5s5 2.5 5 5.5H7Z" fill="#22c55e"/>
             <path d="M12 6.2c1.8 0 3.3 1.5 3.3 3.3 0 .8-.3 1.5-.8 2.1l-1 .9-1.5-1.2c-.6-.6-1-1.3-1-2.1 0-1.8 1.5-3 3-3Z" fill="#14532d"/>
           </svg>
         </span>
@@ -60,6 +60,7 @@
           <div class="t">CO₂ absorption value (€)</div></div><div id="kpiCO2AbsVal" class="v">—</div></div>
 
         <div class="kpi"><div class="icons">
+          <!-- water drop -->
           <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M12 3c3 4 5 6.5 5 9a5 5 0 0 1-10 0c0-2.5 2-5 5-9z" fill="#60a5fa"/>
             <path d="M6 18c1.2.8 2.4.8 3.6 0 1.2.8 2.4.8 3.6 0 1.2.8 2.4.8 3.6 0" stroke="#bcd7ff" stroke-width="1.6" fill="none" stroke-linecap="round"/>
@@ -95,6 +96,7 @@
           <div class="t">Energy value (€)</div></div><div id="kpiEnergyVal" class="v">—</div></div>
 
         <div class="kpi"><div class="icons">
+          <!-- water drop -->
           <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M12 3c3 4 5 6.5 5 9a5 5 0 0 1-10 0c0-2.5 2-5 5-9z" fill="#60a5fa"/>
             <path d="M6 18c1.2.8 2.4.8 3.6 0 1.2.8 2.4.8 3.6 0 1.2.8 2.4.8 3.6 0" stroke="#bcd7ff" stroke-width="1.6" fill="none" stroke-linecap="round"/>
@@ -121,7 +123,8 @@
 
     const style = {
       version: 8,
-      glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
+      // FIX: use the correct fonts endpoint ("/fonts" not "/font") to avoid 404s
+      glyphs: "https://demotiles.maplibre.org/fonts/{fontstack}/{range}.pbf",
       sources: {
         osm: { type:'raster', tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize:256, attribution:'© OpenStreetMap contributors' }
       },
@@ -136,11 +139,14 @@
 
     map.on('load', () => {
       // Build a bigger tree icon on a canvas and register it (works without sprites)
-      const sz = 64;
+      const sz = 64; // bigger base icon
       const c = document.createElement('canvas'); c.width = c.height = sz;
       const ctx = c.getContext('2d');
+      // canopy
       ctx.beginPath(); ctx.arc(sz*0.5, sz*0.40, sz*0.28, 0, Math.PI*2); ctx.fillStyle = '#22c55e'; ctx.shadowColor='rgba(0,0,0,.18)'; ctx.shadowBlur=4; ctx.fill(); ctx.shadowBlur=0;
+      // trunk
       ctx.fillStyle = '#6b4f2a'; ctx.fillRect(sz*0.47, sz*0.46, sz*0.06, sz*0.26);
+      // base shadow
       ctx.beginPath(); ctx.ellipse(sz*0.5, sz*0.78, sz*0.22, sz*0.09, 0, 0, Math.PI*2); ctx.fillStyle = 'rgba(0,0,0,.20)'; ctx.fill();
       map.addImage('tree-icon', ctx.getImageData(0,0,sz,sz), {pixelRatio:2});
 
@@ -149,12 +155,9 @@
       protocol.add(archive);
       map.addSource('areas', { type:'vector', url:`pmtiles://${PMTILES_URL}` });
 
-      // Always-visible tree symbols (show from world view)
+      // Always-visible tree symbols (at all zooms)
       map.addLayer({
-        id:'areas-symbol',
-        type:'symbol',
-        source:'areas', 'source-layer': SOURCE_LAYER,
-        minzoom: 0,
+        id:'areas-symbol', type:'symbol', source:'areas', 'source-layer': SOURCE_LAYER, minzoom: 0,
         layout: {
           'symbol-placement': 'point',
           'icon-image': 'tree-icon',
@@ -163,99 +166,69 @@
           'icon-pitch-alignment': 'viewport',
           'icon-size': [
             'interpolate',['linear'],['zoom'],
-            0, 1.6,   /* larger at world view */
-            6, 1.8,
-            10, 2.0,
+            0, 1.4,
+            6, 1.6,
+            10, 1.9,
             14, 2.2,
             18, 2.6
           ]
         }
       });
 
-      // Text label next to symbol (shows CO₂/yr if present, else "Green area")
-      map.addLayer({
-        id: 'areas-label',
-        type: 'symbol',
-        source: 'areas', 'source-layer': SOURCE_LAYER,
-        minzoom: 0,
-        layout: {
-          'symbol-placement': 'point',
-          'text-field': [
-            'case',
-            ['has','co2_sequestered_kg'],
-            ['concat', 'CO₂ ', ['to-string', ['round', ['get','co2_sequestered_kg']]], ' kg/yr'],
-            'Green area'
-          ],
-          'text-font': ['Open Sans Semibold','Arial Unicode MS Regular'],
-          'text-offset': [0, 1.4],
-          'text-anchor': 'top',
-          'text-allow-overlap': true
-        },
-        paint: {
-          'text-color': '#e6edf7',
-          'text-halo-color': '#0b1220',
-          'text-halo-width': 1.3,
-          'text-opacity': [
-            'interpolate',['linear'],['zoom'],
-            0, 0.9,
-            6, 0.95,
-            10, 1
-          ],
-          'text-halo-blur': 0.2
-        }
+      // World-view helper label near the symbol on hover
+      let hoverPopup;
+      map.on('mouseenter','areas-symbol', (e) => {
+        map.getCanvas().style.cursor='pointer';
+        const f = e.features && e.features[0];
+        if(!f) return;
+        const ll = e.lngLat;
+        const title = 'Green area';
+        hoverPopup = new maplibregl.Popup({closeButton:false, closeOnClick:false, offset:12})
+          .setLngLat(ll)
+          .setHTML(`<div style="font:12px system-ui">${title}</div>`)
+          .addTo(map);
       });
+      map.on('mousemove','areas-symbol', (e)=>{ if(hoverPopup) hoverPopup.setLngLat(e.lngLat); });
+      map.on('mouseleave','areas-symbol', ()=>{ map.getCanvas().style.cursor=''; if(hoverPopup){hoverPopup.remove(); hoverPopup=null;} });
 
-      // Polygons fade in as you zoom
+      // Polygons fade in at higher zooms
       map.addLayer({
-        id:'areas-fill', type:'fill',
-        source:'areas', 'source-layer': SOURCE_LAYER,
-        minzoom: 11,
+        id:'areas-fill', type:'fill', source:'areas', 'source-layer': SOURCE_LAYER, minzoom: 11,
         paint:{ 'fill-color':'#22c55e','fill-opacity': ['interpolate',['linear'],['zoom'], 11, 0.25, 13, 0.45] }
       });
 
       map.addLayer({
-        id:'areas-outline', type:'line',
-        source:'areas', 'source-layer': SOURCE_LAYER,
-        minzoom: 11,
+        id:'areas-outline', type:'line', source:'areas', 'source-layer': SOURCE_LAYER, minzoom: 11,
         paint:{ 'line-color':'#052e16','line-width': 1.2 }
       });
 
-      const cursor = (on) => map.getCanvas().style.cursor = on ? 'pointer' : '';
-      map.on('mouseenter','areas-fill',()=>cursor(true));
-      map.on('mouseleave','areas-fill',()=>cursor(false));
-      map.on('mouseenter','areas-symbol',()=>cursor(true));
-      map.on('mouseleave','areas-symbol',()=>cursor(false));
-      map.on('mouseenter','areas-label',()=>cursor(true));
-      map.on('mouseleave','areas-label',()=>cursor(false));
+      map.on('mouseenter','areas-fill',()=>map.getCanvas().style.cursor='pointer');
+      map.on('mouseleave','areas-fill',()=>map.getCanvas().style.cursor='');
 
       function handleClick(e){
         const features = e.features && e.features.length
           ? e.features
-          : map.queryRenderedFeatures(e.point, { layers:['areas-fill','areas-outline','areas-symbol','areas-label'] });
+          : map.queryRenderedFeatures(e.point, { layers:['areas-fill','areas-outline','areas-symbol'] });
         if (!features || !features.length) return;
-
         const p = features[0].properties || {};
-
-        set('kpiO2',            p.o2_produced_kg,         'kg');
-        set('kpiCO2Seq',        p.co2_sequestered_kg,     'kg');
-        set('kpiCO2AbsVal',     p.co2_absorption_value_eur ?? p.co2_absorption_value, '€');
-        set('kpiH2OPrecip',     p.h2o_precipitation_l,    'L');
-        set('kpiCooling',       p.cooling_savings_kwh,    'kWh');
-        set('kpiPM10',          p.pm10_capture_g,         'g');
-        set('kpiCO2AbsKg',      p.co2_absorption_kg,      'kg');
-        set('kpiPM25',          p.pm25_capture_g,         'g');
-        set('kpiCO2StockKg',    p.co2_stock_kg,           'kg');
-        set('kpiCO2StockVal',   p.co2_stock_value_eur,    '€');
-        set('kpiEnergyVal',     p.energy_value_eur,       '€');
-        set('kpiH2ORet',        p.h2o_retention_l,        'L');
-
+        set('kpiO2', p.o2_produced_kg, 'kg');
+        set('kpiCO2Seq', p.co2_sequestered_kg, 'kg');
+        set('kpiCO2AbsVal', p.co2_absorption_value_eur ?? p.co2_absorption_value, '€');
+        set('kpiH2OPrecip', p.h2o_precipitation_l, 'L');
+        set('kpiCooling', p.cooling_savings_kwh, 'kWh');
+        set('kpiPM10', p.pm10_capture_g, 'g');
+        set('kpiCO2AbsKg', p.co2_absorption_kg, 'kg');
+        set('kpiPM25', p.pm25_capture_g, 'g');
+        set('kpiCO2StockKg', p.co2_stock_kg, 'kg');
+        set('kpiCO2StockVal', p.co2_stock_value_eur, '€');
+        set('kpiEnergyVal', p.energy_value_eur, '€');
+        set('kpiH2ORet', p.h2o_retention_l, 'L');
         document.getElementById('sidebar').classList.add('open');
       }
 
       map.on('click','areas-fill', handleClick);
       map.on('click','areas-outline', handleClick);
       map.on('click','areas-symbol', handleClick);
-      map.on('click','areas-label', handleClick);
       map.on('click', handleClick);
     });
 
