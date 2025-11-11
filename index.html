@@ -12,12 +12,12 @@
     #map{position:relative}
     #mapCanvas{position:absolute;inset:0}
 
-    /* Sidebar is hidden initially and slides in on click */
+   
     #sidebar{
       position:absolute;left:0;top:0;width:min(380px,100%);height:100vh;
       background:var(--panel);border-right:1px solid #1f2937;padding:16px;overflow:auto;
       transform:translateX(-110%);transition:transform .25s ease;
-      z-index:1000; /* <-- keep above the map */
+      z-index:1000; 
     }
     #sidebar.open{transform:none}
 
@@ -146,7 +146,7 @@
       map.on('mouseenter','areas-fill',()=>map.getCanvas().style.cursor='pointer');
       map.on('mouseleave','areas-fill',()=>map.getCanvas().style.cursor='');
 
-      // Click handling on fill, outline, and a general fallback
+      
       function handleClick(e){
         const features = e.features && e.features.length
           ? e.features
@@ -174,7 +174,7 @@
 
       map.on('click','areas-fill', handleClick);
       map.on('click','areas-outline', handleClick);
-      map.on('click', handleClick); // fallback anywhere on the map
+      map.on('click', handleClick); 
     });
 
     function parseNum(v){
