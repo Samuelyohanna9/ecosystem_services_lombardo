@@ -6,13 +6,13 @@
   <title>Urban Green • Lombardy</title>
   <link href="./vendor/maplibre-gl.css" rel="stylesheet" />
   <style>
-    :root { --bg:#0b1220; --panel:#0d1426; --muted:#8fa0bf; --text:#e6edf7; --green:#22c55e }
+    :root{--bg:#0b1220;--panel:#0d1426;--muted:#8fa0bf;--text:#e6edf7;--green:#22c55e}
     html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
     #app{display:grid;grid-template-columns:1fr;grid-template-rows:100vh}
     #map{position:relative}
     #mapCanvas{position:absolute;inset:0}
 
-    /* Sidebar (hidden until click) */
+    /* Sidebar (hidden until a feature is clicked) */
     #sidebar{
       position:absolute;left:0;top:0;width:min(380px,100%);height:100vh;
       background:var(--panel);border-right:1px solid #1f2937;padding:16px;overflow:auto;
@@ -37,7 +37,12 @@
     <aside id="sidebar">
       <button class="close" id="btnClose">Close</button>
       <h1>
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="11" fill="#0ea5e9" stroke="#052e16"/><path d="M7 16c0-3 2.1-5.5 5-5.5s5 2.5 5 5.5H7Z" fill="#22c55e"/><path d="M12 6.2c1.8 0 3.3 1.5 3.3 3.3 0 .8-.3 1.5-.8 2.1l-1 .9-1.5-1.2c-.6-.6-1-1.3-1-2.1 0-1.8 1.5-3 3-3Z" fill="#14532d"/></svg>
+        <span aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="11" fill="#0ea5e9"/><path d="M7 16c0-3 2.1-5.5 5-5.5s5 2.5 5 5.5H7Z" fill="#22c55e"/>
+            <path d="M12 6.2c1.8 0 3.3 1.5 3.3 3.3 0 .8-.3 1.5-.8 2.1l-1 .9-1.5-1.2c-.6-.6-1-1.3-1-2.1 0-1.8 1.5-3 3-3Z" fill="#14532d"/>
+          </svg>
+        </span>
         Lombardy Green Area
       </h1>
 
@@ -126,90 +131,71 @@
     };
 
     const map = new maplibregl.Map({
-      container:'mapCanvas',
-      style,
-      center:[9.154940775917993,45.46043264982563],
-      zoom:10.5
+      container:'mapCanvas', style,
+      center:[9.154940775917993,45.46043264982563], zoom:10.5
     });
-
     map.addControl(new maplibregl.NavigationControl(),'top-right');
 
     map.on('load', () => {
-      // 1) Add a built-in “forest” icon so there are no missing-image errors
-      const forestSVG = `
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-          <defs><linearGradient id="g" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0" stop-color="#22c55e"/><stop offset="1" stop-color="#16a34a"/></linearGradient></defs>
-          <circle cx="32" cy="32" r="30" fill="#0b1220" opacity="0.12"/>
-          <path d="M32 10l10 14h-6l9 12h-7l8 10H16l8-10h-7l9-12h-6L30 10z" fill="url(#g)" stroke="#052e16" stroke-width="2" stroke-linejoin="round"/>
-          <rect x="30" y="42" width="4" height="12" rx="2" fill="#14532d"/>
-        </svg>`;
-      const img = new Image();
-      img.onload = () => map.addImage('tree-icon', img, {pixelRatio: 2});
-      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(forestSVG);
+      // Generate a small tree icon on a canvas and register it – avoids missing sprite/image errors
+      const sz = 40;
+      const c = document.createElement('canvas'); c.width = c.height = sz;
+      const ctx = c.getContext('2d');
+      // canopy
+      ctx.beginPath(); ctx.arc(sz*0.5, sz*0.42, sz*0.26, 0, Math.PI*2); ctx.fillStyle = '#22c55e'; ctx.fill();
+      // trunk
+      ctx.fillStyle = '#6b4f2a'; ctx.fillRect(sz*0.47, sz*0.46, sz*0.06, sz*0.20);
+      // shadow
+      ctx.beginPath(); ctx.ellipse(sz*0.5, sz*0.7, sz*0.18, sz*0.08, 0, 0, Math.PI*2); ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fill();
+      map.addImage('tree-icon', ctx.getImageData(0,0,sz,sz), {pixelRatio:2});
 
-      // 2) Add PMTiles vector source
+      // PMTiles vector source
       const archive = new pmtiles.PMTiles(PMTILES_URL);
       protocol.add(archive);
       map.addSource('areas', { type:'vector', url:`pmtiles://${PMTILES_URL}` });
 
-      // 3) Low-zoom discoverability: symbol layer (icon + tiny label)
+      // Always-visible tree symbols (placed at polygon centroids)
       map.addLayer({
         id:'areas-symbol',
         type:'symbol',
-        source:'areas',
-        'source-layer': SOURCE_LAYER,
-        minzoom: 5,
-        maxzoom: 12,        /* disappears when detailed polygons take over */
+        source:'areas', 'source-layer': SOURCE_LAYER,
+        minzoom: 0,
         layout: {
+          'symbol-placement': 'point',
           'icon-image': 'tree-icon',
           'icon-allow-overlap': true,
-          'icon-size': ['interpolate',['linear'], ['zoom'], 5, 0.6, 11, 1.0],
-          'text-field': 'Green area',
-          'text-size': ['interpolate',['linear'], ['zoom'], 6, 10, 11, 12],
-          'text-offset': [0, 1.2],
-          'text-anchor': 'top',
-          'text-optional': true
-        },
-        paint: {
-          'text-color': '#e6edf7',
-          'text-halo-width': 1.2,
-          'text-halo-color': '#0b1220'
+          'icon-size': ['interpolate',['linear'],['zoom'], 0, 0.5, 6, 0.6, 10, 0.75, 14, 0.95, 18, 1.15]
         }
       });
 
-      // 4) High-zoom detail: fill + outline
+      // Polygons fade in at higher zooms
       map.addLayer({
-        id:'areas-fill',
-        type:'fill',
-        source:'areas',
-        'source-layer': SOURCE_LAYER,
-        minzoom: 12,
-        paint:{ 'fill-color':'#22c55e','fill-opacity':0.45 }
+        id:'areas-fill', type:'fill',
+        source:'areas', 'source-layer': SOURCE_LAYER,
+        minzoom: 11,
+        paint:{ 'fill-color':'#22c55e','fill-opacity': ['interpolate',['linear'],['zoom'], 11, 0.25, 13, 0.45] }
       });
 
       map.addLayer({
-        id:'areas-outline',
-        type:'line',
-        source:'areas',
-        'source-layer': SOURCE_LAYER,
-        minzoom: 12,
-        paint:{ 'line-color':'#052e16','line-width':1.2 }
+        id:'areas-outline', type:'line',
+        source:'areas', 'source-layer': SOURCE_LAYER,
+        minzoom: 11,
+        paint:{ 'line-color':'#052e16','line-width': 1.2 }
       });
 
-      // Cursor hints
-      const hitLayers = ['areas-symbol','areas-fill'];
-      map.on('mouseenter', hitLayers, () => map.getCanvas().style.cursor='pointer');
-      map.on('mouseleave', hitLayers, () => map.getCanvas().style.cursor='');
+      map.on('mouseenter','areas-fill',()=>map.getCanvas().style.cursor='pointer');
+      map.on('mouseleave','areas-fill',()=>map.getCanvas().style.cursor='');
+      map.on('mouseenter','areas-symbol',()=>map.getCanvas().style.cursor='pointer');
+      map.on('mouseleave','areas-symbol',()=>map.getCanvas().style.cursor='');
 
-      // Click handler works regardless of which layer is visible
       function handleClick(e){
         const features = e.features && e.features.length
           ? e.features
-          : map.queryRenderedFeatures(e.point, { layers: hitLayers });
+          : map.queryRenderedFeatures(e.point, { layers:['areas-fill','areas-outline','areas-symbol'] });
         if (!features || !features.length) return;
 
         const p = features[0].properties || {};
+
         set('kpiO2',            p.o2_produced_kg,         'kg');
         set('kpiCO2Seq',        p.co2_sequestered_kg,     'kg');
         set('kpiCO2AbsVal',     p.co2_absorption_value_eur ?? p.co2_absorption_value, '€');
@@ -225,8 +211,11 @@
 
         document.getElementById('sidebar').classList.add('open');
       }
-      map.on('click', hitLayers, handleClick);
-      map.on('click', handleClick); // fallback if clicking gaps
+
+      map.on('click','areas-fill', handleClick);
+      map.on('click','areas-outline', handleClick);
+      map.on('click','areas-symbol', handleClick);
+      map.on('click', handleClick); // fallback (works at any zoom)
     });
 
     function parseNum(v){
