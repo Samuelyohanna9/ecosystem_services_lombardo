@@ -11,7 +11,13 @@
     #app{display:grid;grid-template-columns:1fr;grid-template-rows:100vh}
     #map{position:relative}
     #mapCanvas{position:absolute;inset:0}
-    #sidebar{position:absolute;left:0;top:0;width:min(380px,100%);height:100vh;background:var(--panel);border-right:1px solid #1f2937;padding:16px;overflow:auto;transform:translateX(-110%);transition:transform .25s ease;z-index:1000}
+
+    /* Sidebar (hidden until a feature is clicked) */
+    #sidebar{
+      position:absolute;left:0;top:0;width:min(380px,100%);height:100vh;
+      background:var(--panel);border-right:1px solid #1f2937;padding:16px;overflow:auto;
+      transform:translateX(-110%);transition:transform .25s ease;z-index:1000;
+    }
     #sidebar.open{transform:none}
     h1{font-size:18px;margin:0 0 12px;display:flex;gap:10px;align-items:center}
     .close{position:absolute;right:12px;top:10px;background:#0b1220;border:1px solid #1e2b4a;border-radius:8px;color:var(--text);padding:4px 8px;cursor:pointer}
@@ -43,39 +49,50 @@
         <div class="kpi"><div class="icons">
           <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#86efac"/><text x="8" y="14" font-size="9" font-family="monospace">O₂</text></svg>
           <div class="t">O₂ produced (yr)</div></div><div id="kpiO2" class="v">—</div></div>
+
         <div class="kpi"><div class="icons">
           <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#67e8f9"/><text x="7" y="14" font-size="8" font-family="monospace">CO2</text></svg>
           <div class="t">CO₂ sequestered (yr)</div></div><div id="kpiCO2Seq" class="v">—</div></div>
+
         <div class="kpi"><div class="icons">
           <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#fde68a"/><text x="9" y="15" font-size="10" font-family="monospace">€</text></svg>
           <div class="t">CO₂ absorption value (€)</div></div><div id="kpiCO2AbsVal" class="v">—</div></div>
+
         <div class="kpi"><div class="icons">
           <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M12 3c3 4 5 6.5 5 9a5 5 0 0 1-10 0c0-2.5 2-5 5-9z" fill="#60a5fa"/>
             <path d="M6 18c1.2.8 2.4.8 3.6 0 1.2.8 2.4.8 3.6 0 1.2.8 2.4.8 3.6 0" stroke="#bcd7ff" stroke-width="1.6" fill="none" stroke-linecap="round"/>
           </svg>
           <div class="t">Water precipitation (L/yr)</div></div><div id="kpiH2OPrecip" class="v">—</div></div>
+
         <div class="kpi"><div class="icons">
           <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#facc15"/><path d="M12 5l3 7h-3l2 7-6-9h3l-2-5z" fill="#0b1220"/></svg>
           <div class="t">Cooling savings (kWh/yr)</div></div><div id="kpiCooling" class="v">—</div></div>
+
         <div class="kpi"><div class="icons">
           <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#d1d5db"/><text x="7" y="14" font-size="8" font-family="monospace">PM10</text></svg>
           <div class="t">PM10 captured (g/yr)</div></div><div id="kpiPM10" class="v">—</div></div>
+
         <div class="kpi"><div class="icons">
           <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#67e8f9"/><text x="7" y="14" font-size="8" font-family="monospace">CO2</text></svg>
           <div class="t">CO₂ absorbed (kg/yr)</div></div><div id="kpiCO2AbsKg" class="v">—</div></div>
+
         <div class="kpi"><div class="icons">
           <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#d1d5db"/><text x="6" y="14" font-size="8" font-family="monospace">PM2.5</text></svg>
           <div class="t">PM2.5 captured (g/yr)</div></div><div id="kpiPM25" class="v">—</div></div>
+
         <div class="kpi"><div class="icons">
           <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#86efac"/><text x="7" y="15" font-size="8" font-family="monospace">CO₂</text></svg>
           <div class="t">CO₂ stock (kg)</div></div><div id="kpiCO2StockKg" class="v">—</div></div>
+
         <div class="kpi"><div class="icons">
           <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#fde68a"/><text x="9" y="15" font-size="10" font-family="monospace">€</text></svg>
           <div class="t">CO₂ stock value (€)</div></div><div id="kpiCO2StockVal" class="v">—</div></div>
+
         <div class="kpi"><div class="icons">
           <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#fde68a"/><text x="9" y="15" font-size="10" font-family="monospace">€</text></svg>
           <div class="t">Energy value (€)</div></div><div id="kpiEnergyVal" class="v">—</div></div>
+
         <div class="kpi"><div class="icons">
           <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M12 3c3 4 5 6.5 5 9a5 5 0 0 1-10 0c0-2.5 2-5 5-9z" fill="#60a5fa"/>
@@ -96,6 +113,7 @@
   <script src="./vendor/basemaps.js"></script>
   <script>
     const PMTILES_URL = "https://pub-df9eaf452da44f0ea2cbbcb1a6cd55ac.r2.dev/trees.pmtiles";
+    const SOURCE_LAYER = "trees"; // keep if your layer id is 'trees'
 
     const protocol = new pmtiles.Protocol();
     maplibregl.addProtocol('pmtiles', protocol.tile);
@@ -109,7 +127,8 @@
       layers: [{ id:'osm', type:'raster', source:'osm' }]
     };
 
-    const map = new maplibregl.Map({ container:'mapCanvas', style, center:[9.19,45.46], zoom: 3.0 });
+    // Initial view = your previous Lombardy zoom; users can zoom out to world
+    const map = new maplibregl.Map({ container:'mapCanvas', style, center:[9.19,45.46], zoom:10.5 });
     map.addControl(new maplibregl.NavigationControl(),'top-right');
 
     function parseNum(v){ if(v===undefined||v===null) return NaN; const s=(typeof v==='number')?String(v):String(v).replace(/\./g,'').replace(/,/g,'.'); const m=s.match(/-?[0-9]*\.?[0-9]+/); return m?parseFloat(m[0]):NaN; }
@@ -119,40 +138,54 @@
     window.addEventListener('unload',()=>protocol.removeAll());
 
     map.on('load', async () => {
-      // draw tree icon in-canvas
-      const iconSize=64, c=document.createElement('canvas'); c.width=c.height=iconSize; const ctx=c.getContext('2d');
-      ctx.beginPath(); ctx.arc(iconSize*0.5, iconSize*0.40, iconSize*0.28, 0, Math.PI*2); ctx.fillStyle='#22c55e'; ctx.shadowColor='rgba(0,0,0,.18)'; ctx.shadowBlur=4; ctx.fill(); ctx.shadowBlur=0;
-      ctx.fillStyle='#6b4f2a'; ctx.fillRect(iconSize*0.47, iconSize*0.46, iconSize*0.06, iconSize*0.26);
-      ctx.beginPath(); ctx.ellipse(iconSize*0.5, iconSize*0.78, iconSize*0.22, iconSize*0.09, 0, 0, Math.PI*2); ctx.fillStyle='rgba(0,0,0,.20)'; ctx.fill();
-      map.addImage('tree-icon', ctx.getImageData(0,0,iconSize,iconSize), {pixelRatio:2});
+      // Draw a tree icon on a canvas (no external sprite needed)
+      const ICON = 64, c=document.createElement('canvas'); c.width=c.height=ICON; const ctx=c.getContext('2d');
+      ctx.beginPath(); ctx.arc(ICON*0.5, ICON*0.40, ICON*0.28, 0, Math.PI*2); ctx.fillStyle='#22c55e'; ctx.shadowColor='rgba(0,0,0,.18)'; ctx.shadowBlur=4; ctx.fill(); ctx.shadowBlur=0;
+      ctx.fillStyle='#6b4f2a'; ctx.fillRect(ICON*0.47, ICON*0.46, ICON*0.06, ICON*0.26);
+      ctx.beginPath(); ctx.ellipse(ICON*0.5, ICON*0.78, ICON*0.22, ICON*0.09, 0, 0, Math.PI*2); ctx.fillStyle='rgba(0,0,0,.20)'; ctx.fill();
+      map.addImage('tree-icon', ctx.getImageData(0,0,ICON,ICON), {pixelRatio:2});
 
+      // PMTiles vector source (minzoom now 0)
       const archive = new pmtiles.PMTiles(PMTILES_URL);
       protocol.add(archive);
-
-      // read metadata to get layer id and bounds
-      const header = await archive.getHeader();
-      const meta = await archive.getMetadata();
-      let layerId = "trees";
-      try { const j = JSON.parse(meta.json || "{}"); if (j.vector_layers && j.vector_layers[0]) layerId = j.vector_layers[0].id; } catch(e){}
-      try { if (meta.bounds){ const [w,s,e,n] = meta.bounds.split(",").map(Number); map.fitBounds([[w,s],[e,n]], {padding:40}); } } catch(e){}
-
       map.addSource('areas', { type:'vector', url:`pmtiles://${PMTILES_URL}` });
 
-      // symbols visible from zoom 0 (global)
+      // Symbol layer visible from z=0 (so icons show even at global zoom)
       map.addLayer({
-        id:'areas-symbol', type:'symbol', source:'areas', 'source-layer': layerId, minzoom: 0,
-        layout:{ 'symbol-placement':'point','icon-image':'tree-icon','icon-allow-overlap':true,'icon-ignore-placement':true,'icon-pitch-alignment':'viewport',
-          'icon-size':['interpolate',['linear'],['zoom'], 0,1.6, 6,1.9, 10,2.1, 14,2.4, 18,2.8 ] }
+        id:'areas-symbol', type:'symbol',
+        source:'areas', 'source-layer': SOURCE_LAYER, minzoom: 0,
+        layout:{
+          'symbol-placement':'point',
+          'icon-image':'tree-icon',
+          'icon-allow-overlap': true,
+          'icon-ignore-placement': true,
+          'icon-pitch-alignment':'viewport',
+          'icon-size': [
+            'interpolate',['linear'],['zoom'],
+            0, 1.8,   /* large at world view */
+            4, 1.9,
+            8, 2.0,
+            12, 2.2,
+            16, 2.6,
+            20, 3.0
+          ]
+        }
       });
 
-      // polygons for detail at closer zooms
-      map.addLayer({ id:'areas-fill', type:'fill', source:'areas', 'source-layer': layerId, minzoom: 11,
-        paint:{ 'fill-color':'#22c55e','fill-opacity':['interpolate',['linear'],['zoom'], 11,0.25, 13,0.45 ] } });
+      // Polygons & outlines appear only once you zoom in
+      map.addLayer({
+        id:'areas-fill', type:'fill',
+        source:'areas', 'source-layer': SOURCE_LAYER, minzoom: 11,
+        paint:{ 'fill-color':'#22c55e','fill-opacity':['interpolate',['linear'],['zoom'], 11,0.25, 13,0.45 ] }
+      });
 
-      map.addLayer({ id:'areas-outline', type:'line', source:'areas', 'source-layer': layerId, minzoom: 11,
-        paint:{ 'line-color':'#052e16','line-width':1.2 } });
+      map.addLayer({
+        id:'areas-outline', type:'line',
+        source:'areas', 'source-layer': SOURCE_LAYER, minzoom: 11,
+        paint:{ 'line-color':'#052e16','line-width':1.2 }
+      });
 
-      // small hover label on symbols
+      // Hover label for symbols
       let hoverPopup;
       map.on('mouseenter','areas-symbol', e => {
         map.getCanvas().style.cursor='pointer';
@@ -163,7 +196,6 @@
       map.on('mousemove','areas-symbol', e => { if(hoverPopup) hoverPopup.setLngLat(e.lngLat); });
       map.on('mouseleave','areas-symbol', () => { map.getCanvas().style.cursor=''; if(hoverPopup){hoverPopup.remove(); hoverPopup=null;} });
 
-      // sidebar on click
       function handleClick(e){
         const f = (e.features && e.features[0]) || map.queryRenderedFeatures(e.point, {layers:['areas-fill','areas-outline','areas-symbol']})[0];
         if(!f) return; const p=f.properties||{};
@@ -181,6 +213,7 @@
         setKPI('kpiH2ORet', p.h2o_retention_l, 'L');
         document.getElementById('sidebar').classList.add('open');
       }
+
       map.on('click','areas-fill',handleClick);
       map.on('click','areas-outline',handleClick);
       map.on('click','areas-symbol',handleClick);
