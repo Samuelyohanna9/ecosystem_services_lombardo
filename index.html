@@ -6,7 +6,7 @@
   <title>Urban Green • Lombardy</title>
   <link href="./vendor/maplibre-gl.css" rel="stylesheet" />
   <style>
-    :root{--bg:#0b1220;--panel:#0d1426;--muted:#8fa0bf;--text:#e6edf7;--brand:#22c55e}
+    :root{--bg:#0b1220;--panel:#0d1426;--muted:#8fa0bf;--text:#e6edf7;--green:#22c55e}
     html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
     #app{display:grid;grid-template-columns:360px 1fr;grid-template-rows:100vh}
     #map{position:relative}
@@ -23,7 +23,7 @@
     .icons{display:flex;gap:8px;align-items:center}
     .footer{position:absolute;left:10px;bottom:8px;background:#0b1220cc;border:1px solid #1e2b4a;border-radius:8px;padding:6px 8px;font-size:12px}
     .legend{position:absolute;left:10px;top:10px;background:#0b1220cc;border:1px solid #1e2b4a;border-radius:8px;padding:6px 8px;display:flex;gap:8px;align-items:center}
-    .sw{width:14px;height:14px;border-radius:50%;background:#22c55e;border:1px solid #052e16}
+    .sw{width:14px;height:14px;border-radius:50%;background:var(--green);border:1px solid #052e16}
     @media (max-width:900px){#app{grid-template-columns:1fr;grid-template-rows:1fr}#sidebar{position:absolute;z-index:10;width:min(420px,100%);height:100vh}}
     .maplibregl-ctrl-attrib{font-size:12px}
   </style>
@@ -33,28 +33,22 @@
     <aside id="sidebar">
       <button class="close" id="btnClose">Close</button>
       <h1>
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="11" fill="#0ea5e9" stroke="#052e16"/><path d="M8 17c0-2.8 1.8-5 4-5s4 2.2 4 5h-8Z" fill="#22c55e"/><path d="M12 6c1.7 0 3 1.3 3 3 0 .7-.3 1.4-.7 1.9l-.7.8-.6.6-.7-.6-.7-.8c-.4-.5-.6-1.2-.6-1.9 0-1.7 1.3-3 3-3Z" fill="#14532d"/></svg>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="11" fill="#0ea5e9" stroke="#052e16"/><path d="M7 16c0-3 2.1-5.5 5-5.5s5 2.5 5 5.5H7Z" fill="#22c55e"/><path d="M12 6.2c1.8 0 3.3 1.5 3.3 3.3 0 .8-.3 1.5-.8 2.1l-1 .9-1.5-1.2c-.6-.6-1-1.3-1-2.1 0-1.8 1.5-3 3-3Z" fill="#14532d"/></svg>
         Lombardy Green Area
       </h1>
       <div class="grid">
-        <div class="kpi"><div class="icons">
-          <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#67e8f9"/><text x="7" y="14" font-size="8" font-family="monospace">CO2</text></svg>
-          <div class="t">CO₂ sequestered (yr)</div></div><div id="kpiCo2" class="v">—</div></div>
-        <div class="kpi"><div class="icons">
-          <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#d1d5db"/><text x="7" y="14" font-size="8" font-family="monospace">PM</text></svg>
-          <div class="t">PM captured (yr)</div></div><div id="kpiPm" class="v">—</div></div>
-        <div class="kpi"><div class="icons">
-          <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#60a5fa"/><path d="M12 6c-3 4-3 8 0 12" stroke="#0b1220" stroke-width="2" fill="none"/></svg>
-          <div class="t">Water retained (yr)</div></div><div id="kpiH2o" class="v">—</div></div>
-        <div class="kpi"><div class="icons">
-          <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#facc15"/><path d="M12 5l3 7h-3l2 7-6-9h3l-2-5z" fill="#0b1220"/></svg>
-          <div class="t">Cooling (kWh/yr)</div></div><div id="kpiEnergy" class="v">—</div></div>
-        <div class="kpi"><div class="icons">
-          <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#fde68a"/><text x="9" y="15" font-size="10" font-family="monospace">€</text></svg>
-          <div class="t">Economic value (€)</div></div><div id="kpiEcon" class="v">—</div></div>
-        <div class="kpi"><div class="icons">
-          <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#86efac"/><text x="8" y="14" font-size="9" font-family="monospace">O₂</text></svg>
-          <div class="t">O₂ produced (yr)</div></div><div id="kpiO2" class="v">—</div></div>
+        <div class="kpi"><div class="icons"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#86efac"/><text x="8" y="14" font-size="9" font-family="monospace">O₂</text></svg><div class="t">O₂ produced (yr)</div></div><div id="kpiO2" class="v">—</div></div>
+        <div class="kpi"><div class="icons"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#67e8f9"/><text x="7" y="14" font-size="8" font-family="monospace">CO2</text></svg><div class="t">CO₂ sequestered (yr)</div></div><div id="kpiCO2Seq" class="v">—</div></div>
+        <div class="kpi"><div class="icons"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#fde68a"/><text x="9" y="15" font-size="10" font-family="monospace">€</text></svg><div class="t">CO₂ absorption value (€)</div></div><div id="kpiCO2AbsVal" class="v">—</div></div>
+        <div class="kpi"><div class="icons"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#60a5fa"/><path d="M12 6c-3 4-3 8 0 12" stroke="#0b1220" stroke-width="2" fill="none"/></svg><div class="t">Water precipitation (L/yr)</div></div><div id="kpiH2OPrecip" class="v">—</div></div>
+        <div class="kpi"><div class="icons"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#facc15"/><path d="M12 5l3 7h-3l2 7-6-9h3l-2-5z" fill="#0b1220"/></svg><div class="t">Cooling savings (kWh/yr)</div></div><div id="kpiCooling" class="v">—</div></div>
+        <div class="kpi"><div class="icons"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#d1d5db"/><text x="7" y="14" font-size="8" font-family="monospace">PM10</text></svg><div class="t">PM10 captured (g/yr)</div></div><div id="kpiPM10" class="v">—</div></div>
+        <div class="kpi"><div class="icons"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#67e8f9"/><text x="7" y="14" font-size="8" font-family="monospace">CO2</text></svg><div class="t">CO₂ absorbed (kg/yr)</div></div><div id="kpiCO2AbsKg" class="v">—</div></div>
+        <div class="kpi"><div class="icons"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#d1d5db"/><text x="6" y="14" font-size="8" font-family="monospace">PM2.5</text></svg><div class="t">PM2.5 captured (g/yr)</div></div><div id="kpiPM25" class="v">—</div></div>
+        <div class="kpi"><div class="icons"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#86efac"/><text x="7" y="15" font-size="8" font-family="monospace">CO₂</text></svg><div class="t">CO₂ stock (kg)</div></div><div id="kpiCO2StockKg" class="v">—</div></div>
+        <div class="kpi"><div class="icons"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#fde68a"/><text x="9" y="15" font-size="10" font-family="monospace">€</text></svg><div class="t">CO₂ stock value (€)</div></div><div id="kpiCO2StockVal" class="v">—</div></div>
+        <div class="kpi"><div class="icons"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#fde68a"/><text x="9" y="15" font-size="10" font-family="monospace">€</text></svg><div class="t">Energy value (€)</div></div><div id="kpiEnergyVal" class="v">—</div></div>
+        <div class="kpi"><div class="icons"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#60a5fa"/><path d="M12 6c-3 4-3 8 0 12" stroke="#0b1220" stroke-width="2" fill="none"/></svg><div class="t">Water retained (L/yr)</div></div><div id="kpiH2ORet" class="v">—</div></div>
       </div>
     </aside>
     <main id="map">
@@ -83,25 +77,31 @@
       map.on('mouseleave','areas-fill',()=>map.getCanvas().style.cursor='');
       map.on('click','areas-fill',(e)=>{
         const p=(e.features[0]&&e.features[0].properties)||{};
-        const co2=p.co2_sequestered_kg??p.co2_absorption_kg;
-        const pm=p.pm10_capture_g??p.pm25_capture_g;
-        const h2o=p.h2o_retention_l??p.h2o_precipitation_l;
-        const energy=p.cooling_savings_kwh;
-        const econ=p.economic_value_eur??p.energy_value_eur??p.co2_absorption_value_eur;
-        const o2=p.o2_produced_kg;
-        setKPI('kpiCo2',co2,'kg');
-        setKPI('kpiPm',pm,'g');
-        setKPI('kpiH2o',h2o,'L');
-        setKPI('kpiEnergy',energy,'kWh');
-        setKPI('kpiEcon',econ,'€');
-        setKPI('kpiO2',o2,'kg');
+        set('kpiO2', p.o2_produced_kg, 'kg');
+        set('kpiCO2Seq', p.co2_sequestered_kg, 'kg');
+        set('kpiCO2AbsVal', p.co2_absorption_value_eur ?? p.co2_absorption_value, '€');
+        set('kpiH2OPrecip', p.h2o_precipitation_l, 'L');
+        set('kpiCooling', p.cooling_savings_kwh, 'kWh');
+        set('kpiPM10', p.pm10_capture_g, 'g');
+        set('kpiCO2AbsKg', p.co2_absorption_kg, 'kg');
+        set('kpiPM25', p.pm25_capture_g, 'g');
+        set('kpiCO2StockKg', p.co2_stock_kg, 'kg');
+        set('kpiCO2StockVal', p.co2_stock_value_eur, '€');
+        set('kpiEnergyVal', p.energy_value_eur, '€');
+        set('kpiH2ORet', p.h2o_retention_l, 'L');
         document.getElementById('sidebar').classList.add('open');
       });
     });
-    function setKPI(id,v,unit){
+    function parseNum(v){
+      if(v===undefined||v===null) return NaN;
+      const s=(typeof v==='number')?String(v):String(v).replace(/\./g,'').replace(/,/g,'.');
+      const m=s.match(/-?[0-9]*\.?[0-9]+/);
+      return m?parseFloat(m[0]):NaN;
+    }
+    function set(id,v,unit){
       const el=document.getElementById(id);
-      if(v===undefined||v===null||v!==v){el.textContent='—';return}
-      const n=Number(v); if(!isFinite(n)){el.textContent='—';return}
+      const n=parseNum(v);
+      if(!isFinite(n)){el.textContent='—';return}
       el.textContent=n.toLocaleString(undefined,{maximumFractionDigits:0})+(unit?` ${unit}`:'');
     }
     document.getElementById('btnClose').addEventListener('click',()=>document.getElementById('sidebar').classList.remove('open'));
