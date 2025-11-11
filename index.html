@@ -8,10 +8,10 @@
   <style>
     :root{--bg:#0b1220;--panel:#0d1426;--muted:#8fa0bf;--text:#e6edf7;--green:#22c55e}
     html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
-    #app{display:grid;grid-template-columns:360px 1fr;grid-template-rows:100vh}
+    #app{display:grid;grid-template-columns:1fr;grid-template-rows:100vh}
     #map{position:relative}
     #mapCanvas{position:absolute;inset:0}
-    #sidebar{background:var(--panel);border-right:1px solid #1f2937;padding:16px;overflow:auto;transform:translateX(-100%);transition:transform .25s ease}
+    #sidebar{position:absolute;left:0;top:0;width:min(380px,100%);height:100vh;background:var(--panel);border-right:1px solid #1f2937;padding:16px;overflow:auto;transform:translateX(-110%);transition:transform .25s ease}
     #sidebar.open{transform:none}
     h1{font-size:18px;margin:0 0 12px;display:flex;gap:10px;align-items:center}
     .muted{color:var(--muted)}
@@ -24,7 +24,6 @@
     .footer{position:absolute;left:10px;bottom:8px;background:#0b1220cc;border:1px solid #1e2b4a;border-radius:8px;padding:6px 8px;font-size:12px}
     .legend{position:absolute;left:10px;top:10px;background:#0b1220cc;border:1px solid #1e2b4a;border-radius:8px;padding:6px 8px;display:flex;gap:8px;align-items:center}
     .sw{width:14px;height:14px;border-radius:50%;background:var(--green);border:1px solid #052e16}
-    @media (max-width:900px){#app{grid-template-columns:1fr;grid-template-rows:1fr}#sidebar{position:absolute;z-index:10;width:min(420px,100%);height:100vh}}
     .maplibregl-ctrl-attrib{font-size:12px}
   </style>
 </head>
@@ -52,9 +51,9 @@
       </div>
     </aside>
     <main id="map">
-      <div class="legend"><span class="sw"></span><span class="muted">Green areas</span></div>
+      <div class="legend"><span class="sw"></span><span class="muted">R3GIS</span></div>
       <div id="mapCanvas"></div>
-      <div class="footer">© You • OpenStreetMap • MapLibre • PMTiles</div>
+      <div class="footer">© R3GIS</div>
     </main>
   </div>
   <script src="./vendor/maplibre-gl.js"></script>
