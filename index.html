@@ -157,27 +157,27 @@
       map.addSource('areas', { type:'vector', url:`pmtiles://${PMTILES_URL}` });
 
       
-      map.addLayer({
-        id:'areas-symbol',
-        type:'symbol',
-        source:'areas',
-        'source-layer': SOURCE_LAYER,
-        minzoom: 3,
-        maxzoom: 12,
-        layout:{
-          'symbol-placement':'point',
-          'icon-image':'tree-icon',
-          'icon-allow-overlap': true,
-          'icon-ignore-placement': true,
-          'icon-pitch-alignment':'viewport',
-          'icon-size': [
-            'interpolate',['linear'],['zoom'],
-            3, 1,
-            9, 2,
-            11.9, 2.3
-          ]
-        }
-      });
+map.addLayer({
+  id:'areas-symbol',
+  type:'symbol',
+  source:'areas',
+  'source-layer': SOURCE_LAYER,
+  minzoom: 3,
+  maxzoom: 12,
+  layout:{
+    'symbol-placement':'point',
+    'icon-image':'tree-icon',
+    'icon-allow-overlap': true,
+    'icon-ignore-placement': true,
+    'icon-pitch-alignment':'viewport',
+    'icon-size': [
+      'interpolate',['linear'],['zoom'],
+      3, 0.6,   // smaller at low zoom
+      9, 1.2,
+      11.9, 1.5 // slightly smaller overall
+    ]
+  }
+});
 
       
       map.addLayer({
