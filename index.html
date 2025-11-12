@@ -93,7 +93,6 @@
 
   <script src="./vendor/maplibre-gl.js"></script>
   <script src="./vendor/pmtiles.js"></script>
-  <script src="./vendor/basemaps.js"></script>
   <script>
     const PMTILES_URL = "https://pub-df9eaf452da44f0ea2cbbcb1a6cd55ac.r2.dev/trees.pmtiles";
     const SOURCE_LAYER = "trees";
@@ -110,35 +109,38 @@
       layers: [{ id:'osm', type:'raster', source:'osm' }]
     };
 
-    // Initial view stays at Lombardy; users can still zoom out to the world
+    // Start on Lombardy (previous zoom); user can zoom out to the globe
     const map = new maplibregl.Map({ container:'mapCanvas', style, center:[9.19,45.46], zoom:10.5 });
     map.addControl(new maplibregl.NavigationControl(),'top-right');
 
-    function parseNum(v){ if(v===undefined||v===null) return NaN; const s=(typeof v==='number')?String(v):String(v).replace(/\./g,'').replace(/,/g,'.'); const m=s.match(/-?[0-9]*\\.?[0-9]+/); return m?parseFloat(m[0]):NaN; }
+    function parseNum(v){ if(v===undefined||v===null) return NaN; const s=(typeof v==='number')?String(v):String(v).replace(/\./g,'').replace(/,/g,'.'); const m=s.match(/-?[0-9]*\.?[0-9]+/); return m?parseFloat(m[0]):NaN; }
     function setKPI(id,v,unit){ const el=document.getElementById(id); const n=parseNum(v); el.textContent = isFinite(n) ? n.toLocaleString(undefined,{maximumFractionDigits:0})+(unit?` ${unit}`:'') : '—'; }
 
     document.getElementById('btnClose').addEventListener('click',()=>document.getElementById('sidebar').classList.remove('open'));
     window.addEventListener('unload',()=>protocol.removeAll());
 
-    map.on('load', async () => {
-      const ICON = 64, c=document.createElement('canvas'); c.width=c.height=ICON; const ctx=c.getContext('2d');
+    map.on('load', () => {
+      // Canvas tree icon (smaller overall sizing)
+      const ICON = 56;
+      const c=document.createElement('canvas'); c.width=c.height=ICON; const ctx=c.getContext('2d');
       ctx.beginPath(); ctx.arc(ICON*0.5, ICON*0.40, ICON*0.28, 0, Math.PI*2); ctx.fillStyle='#22c55e'; ctx.shadowColor='rgba(0,0,0,.18)'; ctx.shadowBlur=4; ctx.fill(); ctx.shadowBlur=0;
       ctx.fillStyle='#6b4f2a'; ctx.fillRect(ICON*0.47, ICON*0.46, ICON*0.06, ICON*0.26);
       ctx.beginPath(); ctx.ellipse(ICON*0.5, ICON*0.78, ICON*0.22, ICON*0.09, 0, 0, Math.PI*2); ctx.fillStyle='rgba(0,0,0,.20)'; ctx.fill();
       map.addImage('tree-icon', ctx.getImageData(0,0,ICON,ICON), {pixelRatio:2});
 
+      // Vector source
       const archive = new pmtiles.PMTiles(PMTILES_URL);
       protocol.add(archive);
       map.addSource('areas', { type:'vector', url:`pmtiles://${PMTILES_URL}` });
 
-      // SYMBOLS: visible from z=0 up to z<12; disappear after 12 so polygons take over
+      // Symbols from globe to city, then fade out near z=12
       map.addLayer({
         id:'areas-symbol',
         type:'symbol',
         source:'areas',
         'source-layer': SOURCE_LAYER,
         minzoom: 0,
-        maxzoom: 12,           // <-- hides symbols once you zoom in past 12
+        maxzoom: 12,                  // disappears after ~12
         layout:{
           'symbol-placement':'point',
           'icon-image':'tree-icon',
@@ -147,25 +149,23 @@
           'icon-pitch-alignment':'viewport',
           'icon-size': [
             'interpolate',['linear'],['zoom'],
-            0, 1.8,
-            4, 1.9,
-            8, 2.1,
-            11.9, 2.3
+            0, 1.4, 4, 1.5, 8, 1.6, 11.5, 1.8
           ]
+        },
+        paint:{
+          // nice fade-out between 11 and 12
+          'icon-opacity': ['interpolate',['linear'],['zoom'], 11, 1, 12, 0]
         }
       });
 
-      // POLYGONS: fade in from z=11 and remain (so past z=12 you only see polygons)
+      // Polygons appear as you zoom in (kept as before)
       map.addLayer({
         id:'areas-fill',
         type:'fill',
         source:'areas',
         'source-layer': SOURCE_LAYER,
         minzoom: 11,
-        paint:{
-          'fill-color':'#22c55e',
-          'fill-opacity': ['interpolate',['linear'],['zoom'], 11,0.25, 13,0.45 ]
-        }
+        paint:{ 'fill-color':'#22c55e','fill-opacity':['interpolate',['linear'],['zoom'], 11,0.25, 13,0.45 ] }
       });
 
       map.addLayer({
@@ -177,16 +177,17 @@
         paint:{ 'line-color':'#052e16','line-width':1.2 }
       });
 
+      // Hover hint on symbols
       let hoverPopup;
       map.on('mouseenter','areas-symbol', e => {
         map.getCanvas().style.cursor='pointer';
-        const ll=e.lngLat;
         hoverPopup=new maplibregl.Popup({closeButton:false,closeOnClick:false,offset:12})
-          .setLngLat(ll).setHTML('<div style="font:12px system-ui">Green area</div>').addTo(map);
+          .setLngLat(e.lngLat).setHTML('<div style="font:12px system-ui">Green area</div>').addTo(map);
       });
       map.on('mousemove','areas-symbol', e => { if(hoverPopup) hoverPopup.setLngLat(e.lngLat); });
       map.on('mouseleave','areas-symbol', () => { map.getCanvas().style.cursor=''; if(hoverPopup){hoverPopup.remove(); hoverPopup=null;} });
 
+      // Click to open sidebar + fill KPIs
       function handleClick(e){
         const f = (e.features && e.features[0]) || map.queryRenderedFeatures(e.point, {layers:['areas-fill','areas-outline','areas-symbol']})[0];
         if(!f) return; const p=f.properties||{};
@@ -204,7 +205,6 @@
         setKPI('kpiH2ORet', p.h2o_retention_l, 'L');
         document.getElementById('sidebar').classList.add('open');
       }
-
       map.on('click','areas-fill',handleClick);
       map.on('click','areas-outline',handleClick);
       map.on('click','areas-symbol',handleClick);
