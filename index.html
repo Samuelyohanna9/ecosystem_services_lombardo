@@ -126,13 +126,13 @@
       layers: [{ id:'osm', type:'raster', source:'osm' }]
     };
 
-    // Start at your previous Lombardy view. Limit zoom-out to z=6 so icons never vanish by going farther.
+    
     const map = new maplibregl.Map({
       container:'mapCanvas',
       style,
       center:[9.154940775917993,45.46043264982563],
       zoom:10.5,
-      minZoom: 6,      // <- users cannot zoom out beyond this (same as symbol minzoom)
+      minZoom: 3,      
       maxZoom: 20
     });
     map.addControl(new maplibregl.NavigationControl(),'top-right');
@@ -144,7 +144,7 @@
     window.addEventListener('unload',()=>protocol.removeAll());
 
     map.on('load', async () => {
-      // Draw a tree icon on a canvas (no external sprite)
+     
       const ICON=64, c=document.createElement('canvas'); c.width=c.height=ICON; const ctx=c.getContext('2d');
       ctx.beginPath(); ctx.arc(ICON*0.5, ICON*0.40, ICON*0.28, 0, Math.PI*2); ctx.fillStyle='#22c55e'; ctx.shadowColor='rgba(0,0,0,.18)'; ctx.shadowBlur=4; ctx.fill(); ctx.shadowBlur=0;
       ctx.fillStyle='#6b4f2a'; ctx.fillRect(ICON*0.47, ICON*0.46, ICON*0.06, ICON*0.26);
@@ -156,13 +156,13 @@
       protocol.add(archive);
       map.addSource('areas', { type:'vector', url:`pmtiles://${PMTILES_URL}` });
 
-      // SYMBOLS: visible only between z=6 and z<12
+      
       map.addLayer({
         id:'areas-symbol',
         type:'symbol',
         source:'areas',
         'source-layer': SOURCE_LAYER,
-        minzoom: 6,
+        minzoom: 3,
         maxzoom: 12,
         layout:{
           'symbol-placement':'point',
