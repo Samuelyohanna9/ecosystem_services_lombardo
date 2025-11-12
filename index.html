@@ -43,50 +43,39 @@
         <div class="kpi"><div class="icons">
           <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#86efac"/><text x="8" y="14" font-size="9" font-family="monospace">O₂</text></svg>
           <div class="t">O₂ produced (yr)</div></div><div id="kpiO2" class="v">—</div></div>
-
         <div class="kpi"><div class="icons">
           <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#67e8f9"/><text x="7" y="14" font-size="8" font-family="monospace">CO2</text></svg>
           <div class="t">CO₂ sequestered (yr)</div></div><div id="kpiCO2Seq" class="v">—</div></div>
-
         <div class="kpi"><div class="icons">
           <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#fde68a"/><text x="9" y="15" font-size="10" font-family="monospace">€</text></svg>
           <div class="t">CO₂ absorption value (€)</div></div><div id="kpiCO2AbsVal" class="v">—</div></div>
-
         <div class="kpi"><div class="icons">
           <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M12 3c3 4 5 6.5 5 9a5 5 0 0 1-10 0c0-2.5 2-5 5-9z" fill="#60a5fa"/>
             <path d="M6 18c1.2.8 2.4.8 3.6 0 1.2.8 2.4.8 3.6 0 1.2.8 2.4.8 3.6 0" stroke="#bcd7ff" stroke-width="1.6" fill="none" stroke-linecap="round"/>
           </svg>
           <div class="t">Water precipitation (L/yr)</div></div><div id="kpiH2OPrecip" class="v">—</div></div>
-
         <div class="kpi"><div class="icons">
           <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#facc15"/><path d="M12 5l3 7h-3l2 7-6-9h3l-2-5z" fill="#0b1220"/></svg>
           <div class="t">Cooling savings (kWh/yr)</div></div><div id="kpiCooling" class="v">—</div></div>
-
         <div class="kpi"><div class="icons">
           <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#d1d5db"/><text x="7" y="14" font-size="8" font-family="monospace">PM10</text></svg>
           <div class="t">PM10 captured (g/yr)</div></div><div id="kpiPM10" class="v">—</div></div>
-
         <div class="kpi"><div class="icons">
           <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#67e8f9"/><text x="7" y="14" font-size="8" font-family="monospace">CO2</text></svg>
           <div class="t">CO₂ absorbed (kg/yr)</div></div><div id="kpiCO2AbsKg" class="v">—</div></div>
-
         <div class="kpi"><div class="icons">
           <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#d1d5db"/><text x="6" y="14" font-size="8" font-family="monospace">PM2.5</text></svg>
           <div class="t">PM2.5 captured (g/yr)</div></div><div id="kpiPM25" class="v">—</div></div>
-
         <div class="kpi"><div class="icons">
           <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#86efac"/><text x="7" y="15" font-size="8" font-family="monospace">CO₂</text></svg>
           <div class="t">CO₂ stock (kg)</div></div><div id="kpiCO2StockKg" class="v">—</div></div>
-
         <div class="kpi"><div class="icons">
           <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#fde68a"/><text x="9" y="15" font-size="10" font-family="monospace">€</text></svg>
           <div class="t">CO₂ stock value (€)</div></div><div id="kpiCO2StockVal" class="v">—</div></div>
-
         <div class="kpi"><div class="icons">
           <svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#fde68a"/><text x="9" y="15" font-size="10" font-family="monospace">€</text></svg>
           <div class="t">Energy value (€)</div></div><div id="kpiEnergyVal" class="v">—</div></div>
-
         <div class="kpi"><div class="icons">
           <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M12 3c3 4 5 6.5 5 9a5 5 0 0 1-10 0c0-2.5 2-5 5-9z" fill="#60a5fa"/>
@@ -130,27 +119,60 @@
     document.getElementById('btnClose').addEventListener('click',()=>document.getElementById('sidebar').classList.remove('open'));
     window.addEventListener('unload',()=>protocol.removeAll());
 
-    map.on('load', () => {
-      // Small canvas-made tree icon (no external sprite)
-      const ICON = 52; // a bit smaller than before
+    map.on('load', async () => {
+      // Draw the tree icon (slightly smaller)
+      const ICON = 52;
       const c=document.createElement('canvas'); c.width=c.height=ICON; const ctx=c.getContext('2d');
       ctx.beginPath(); ctx.arc(ICON*0.5, ICON*0.40, ICON*0.28, 0, Math.PI*2); ctx.fillStyle='#22c55e'; ctx.shadowColor='rgba(0,0,0,.18)'; ctx.shadowBlur=4; ctx.fill(); ctx.shadowBlur=0;
       ctx.fillStyle='#6b4f2a'; ctx.fillRect(ICON*0.47, ICON*0.46, ICON*0.06, ICON*0.26);
       ctx.beginPath(); ctx.ellipse(ICON*0.5, ICON*0.78, ICON*0.22, ICON*0.09, 0, 0, Math.PI*2); ctx.fillStyle='rgba(0,0,0,.20)'; ctx.fill();
       map.addImage('tree-icon', ctx.getImageData(0,0,ICON,ICON), {pixelRatio:2});
 
-      // Vector tiles
+      // PMTiles source
       const archive = new pmtiles.PMTiles(PMTILES_URL);
       protocol.add(archive);
       map.addSource('areas', { type:'vector', url:`pmtiles://${PMTILES_URL}` });
 
-      // OPTION A: icons visible from globe, gently fade out by ~z=12
+      // OPTION A: Low-zoom fallback point that is always visible from the globe
+      map.addSource('world-symbol-src', {
+        type:'geojson',
+        data:{
+          type:'FeatureCollection',
+          features:[{
+            type:'Feature',
+            properties:{ name:'Lombardy green areas' },
+            geometry:{ type:'Point', coordinates:[9.19,45.46] } // near Milan
+          }]
+        }
+      });
+
+      map.addLayer({
+        id:'world-symbol',
+        type:'symbol',
+        source:'world-symbol-src',
+        minzoom: 0,
+        maxzoom: 7, // shows from globe up to ~country scale, then hands off to vector symbols
+        layout:{
+          'icon-image':'tree-icon',
+          'icon-size': ['interpolate',['linear'],['zoom'], 0,1.2, 3,1.3, 6,1.4],
+          'icon-allow-overlap': true,
+          'icon-ignore-placement': true,
+          'text-field': ['get','name'],
+          'text-font': ['Open Sans Semibold','Arial Unicode MS Regular'],
+          'text-size': 12,
+          'text-offset': [0,1.4],
+          'text-anchor': 'top'
+        },
+        paint:{ 'text-halo-color':'#0b1220','text-halo-width':1.2 }
+      });
+
+      // Vector symbols (kick in after the world fallback, fade out near z~12)
       map.addLayer({
         id:'areas-symbol',
         type:'symbol',
         source:'areas',
         'source-layer': SOURCE_LAYER,
-        minzoom: 0,
+        minzoom: 7,
         maxzoom: 12,
         layout:{
           'symbol-placement':'point',
@@ -158,30 +180,19 @@
           'icon-allow-overlap': true,
           'icon-ignore-placement': true,
           'icon-pitch-alignment':'viewport',
-          'icon-size': [
-            'interpolate',['linear'],['zoom'],
-            0, 1.20,
-            4, 1.30,
-            8, 1.40,
-            11.5, 1.55
-          ]
+          'icon-size': ['interpolate',['linear'],['zoom'], 7,1.3, 10,1.45, 11.8,1.55]
         },
-        paint:{
-          'icon-opacity': ['interpolate',['linear'],['zoom'], 11, 1, 12, 0]
-        }
+        paint:{ 'icon-opacity': ['interpolate',['linear'],['zoom'], 11,1, 12,0] }
       });
 
-      // Polygons: appear from ~z=11 and remain
+      // Polygons (stay after ~z11)
       map.addLayer({
         id:'areas-fill',
         type:'fill',
         source:'areas',
         'source-layer': SOURCE_LAYER,
         minzoom: 11,
-        paint:{
-          'fill-color':'#22c55e',
-          'fill-opacity':['interpolate',['linear'],['zoom'], 11,0.25, 13,0.45 ]
-        }
+        paint:{ 'fill-color':'#22c55e','fill-opacity':['interpolate',['linear'],['zoom'], 11,0.25, 13,0.45 ] }
       });
 
       map.addLayer({
@@ -195,35 +206,39 @@
 
       // Hover hint on symbols
       let hoverPopup;
-      map.on('mouseenter','areas-symbol', e => {
-        map.getCanvas().style.cursor='pointer';
-        hoverPopup=new maplibregl.Popup({closeButton:false,closeOnClick:false,offset:12})
-          .setLngLat(e.lngLat).setHTML('<div style="font:12px system-ui">Green area</div>').addTo(map);
-      });
-      map.on('mousemove','areas-symbol', e => { if(hoverPopup) hoverPopup.setLngLat(e.lngLat); });
-      map.on('mouseleave','areas-symbol', () => { map.getCanvas().style.cursor=''; if(hoverPopup){hoverPopup.remove(); hoverPopup=null;} });
+      for (const layer of ['world-symbol','areas-symbol']) {
+        map.on('mouseenter', layer, e => {
+          map.getCanvas().style.cursor='pointer';
+          hoverPopup=new maplibregl.Popup({closeButton:false,closeOnClick:false,offset:12})
+            .setLngLat(e.lngLat).setHTML('<div style="font:12px system-ui">Green area</div>').addTo(map);
+        });
+        map.on('mousemove', layer, e => { if(hoverPopup) hoverPopup.setLngLat(e.lngLat); });
+        map.on('mouseleave', layer, () => { map.getCanvas().style.cursor=''; if(hoverPopup){hoverPopup.remove(); hoverPopup=null;} });
+      }
 
-      // Click to open sidebar + KPIs
+      // Click -> KPIs
       function handleClick(e){
-        const f = (e.features && e.features[0]) || map.queryRenderedFeatures(e.point, {layers:['areas-fill','areas-outline','areas-symbol']})[0];
+        const f = (e.features && e.features[0]) || map.queryRenderedFeatures(e.point, {layers:['areas-fill','areas-outline','areas-symbol','world-symbol']})[0];
         if(!f) return; const p=f.properties||{};
-        setKPI('kpiO2', p.o2_produced_kg, 'kg');
-        setKPI('kpiCO2Seq', p.co2_sequestered_kg, 'kg');
-        setKPI('kpiCO2AbsVal', p.co2_absorption_value_eur ?? p.co2_absorption_value, '€');
-        setKPI('kpiH2OPrecip', p.h2o_precipitation_l, 'L');
-        setKPI('kpiCooling', p.cooling_savings_kwh, 'kWh');
-        setKPI('kpiPM10', p.pm10_capture_g, 'g');
-        setKPI('kpiCO2AbsKg', p.co2_absorption_kg, 'kg');
-        setKPI('kpiPM25', p.pm25_capture_g, 'g');
-        setKPI('kpiCO2StockKg', p.co2_stock_kg, 'kg');
-        setKPI('kpiCO2StockVal', p.co2_stock_value_eur, '€');
-        setKPI('kpiEnergyVal', p.energy_value_eur, '€');
-        setKPI('kpiH2ORet', p.h2o_retention_l, 'L');
+        const set=(id,v,u)=>{const el=document.getElementById(id);const n=parseNum(v);el.textContent=isFinite(n)?n.toLocaleString(undefined,{maximumFractionDigits:0})+(u?` ${u}`:''):'—';}
+        set('kpiO2', p.o2_produced_kg, 'kg');
+        set('kpiCO2Seq', p.co2_sequestered_kg, 'kg');
+        set('kpiCO2AbsVal', p.co2_absorption_value_eur ?? p.co2_absorption_value, '€');
+        set('kpiH2OPrecip', p.h2o_precipitation_l, 'L');
+        set('kpiCooling', p.cooling_savings_kwh, 'kWh');
+        set('kpiPM10', p.pm10_capture_g, 'g');
+        set('kpiCO2AbsKg', p.co2_absorption_kg, 'kg');
+        set('kpiPM25', p.pm25_capture_g, 'g');
+        set('kpiCO2StockKg', p.co2_stock_kg, 'kg');
+        set('kpiCO2StockVal', p.co2_stock_value_eur, '€');
+        set('kpiEnergyVal', p.energy_value_eur, '€');
+        set('kpiH2ORet', p.h2o_retention_l, 'L');
         document.getElementById('sidebar').classList.add('open');
       }
       map.on('click','areas-fill',handleClick);
       map.on('click','areas-outline',handleClick);
       map.on('click','areas-symbol',handleClick);
+      map.on('click','world-symbol',handleClick);
       map.on('click',handleClick);
     });
   </script>
