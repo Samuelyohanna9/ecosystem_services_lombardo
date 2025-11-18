@@ -28,6 +28,20 @@
     .icons{display:flex;gap:8px;align-items:center}
     .footer{position:absolute;left:10px;bottom:8px;background:#0b1220cc;border:1px solid #1e2b4a;border-radius:8px;padding:6px 8px;font-size:12px;z-index:10}
     .maplibregl-ctrl-attrib{font-size:12px}
+
+    /* NEW: image styling */
+    .site-image-wrapper{
+      margin:8px 0 14px;
+      border-radius:12px;
+      overflow:hidden;
+      border:1px solid #1f2937;
+      background:#020617;
+    }
+    .site-image-wrapper img{
+      display:block;
+      width:100%;
+      height:auto;
+    }
   </style>
 </head>
 <body>
@@ -44,6 +58,11 @@
         </span>
         Lombardy Green Area
       </h1>
+
+      <!-- NEW: image block above KPIs -->
+      <div id="siteImageWrapper" class="site-image-wrapper" style="display:none;">
+        <img id="siteImage" src="" alt="Green area image">
+      </div>
 
       <div class="grid">
         <div class="kpi"><div class="icons">
@@ -126,25 +145,36 @@
       layers: [{ id:'osm', type:'raster', source:'osm' }]
     };
 
-    
     const map = new maplibregl.Map({
       container:'mapCanvas',
       style,
       center:[9.154940775917993,45.46043264982563],
       zoom:10.5,
-      minZoom: 4,      
+      minZoom: 4,
       maxZoom: 20
     });
     map.addControl(new maplibregl.NavigationControl(),'top-right');
 
-    function parseNum(v){ if(v===undefined||v===null) return NaN; const s=(typeof v==='number')?String(v):String(v).replace(/\./g,'').replace(/,/g,'.'); const m=s.match(/-?[0-9]*\.?[0-9]+/); return m?parseFloat(m[0]):NaN; }
-    function setKPI(id,v,unit){ const el=document.getElementById(id); const n=parseNum(v); el.textContent = isFinite(n) ? n.toLocaleString(undefined,{maximumFractionDigits:0})+(unit?` ${unit}`:'') : '—'; }
+    function parseNum(v){
+      if(v===undefined||v===null) return NaN;
+      const s=(typeof v==='number')?String(v):String(v).replace(/\./g,'').replace(/,/g,'.');
+      const m=s.match(/-?[0-9]*\.?[0-9]+/);
+      return m?parseFloat(m[0]):NaN;
+    }
+    function setKPI(id,v,unit){
+      const el=document.getElementById(id);
+      const n=parseNum(v);
+      el.textContent = isFinite(n)
+        ? n.toLocaleString(undefined,{maximumFractionDigits:0})+(unit?` ${unit}`:'')
+        : '—';
+    }
 
-    document.getElementById('btnClose').addEventListener('click',()=>document.getElementById('sidebar').classList.remove('open'));
+    document.getElementById('btnClose')
+      .addEventListener('click',()=>document.getElementById('sidebar').classList.remove('open'));
     window.addEventListener('unload',()=>protocol.removeAll());
 
     map.on('load', async () => {
-     
+
       const ICON=64, c=document.createElement('canvas'); c.width=c.height=ICON; const ctx=c.getContext('2d');
       ctx.beginPath(); ctx.arc(ICON*0.5, ICON*0.40, ICON*0.28, 0, Math.PI*2); ctx.fillStyle='#22c55e'; ctx.shadowColor='rgba(0,0,0,.18)'; ctx.shadowBlur=4; ctx.fill(); ctx.shadowBlur=0;
       ctx.fillStyle='#6b4f2a'; ctx.fillRect(ICON*0.47, ICON*0.46, ICON*0.06, ICON*0.26);
@@ -156,30 +186,28 @@
       protocol.add(archive);
       map.addSource('areas', { type:'vector', url:`pmtiles://${PMTILES_URL}` });
 
-      
-map.addLayer({
-  id:'areas-symbol',
-  type:'symbol',
-  source:'areas',
-  'source-layer': SOURCE_LAYER,
-  minzoom: 3,
-  maxzoom: 12,
-  layout:{
-    'symbol-placement':'point',
-    'icon-image':'tree-icon',
-    'icon-allow-overlap': true,
-    'icon-ignore-placement': true,
-    'icon-pitch-alignment':'viewport',
-    'icon-size': [
-      'interpolate',['linear'],['zoom'],
-      3, 0.6,   // smaller at low zoom
-      9, 1.2,
-      11.9, 1.5 // slightly smaller overall
-    ]
-  }
-});
+      map.addLayer({
+        id:'areas-symbol',
+        type:'symbol',
+        source:'areas',
+        'source-layer': SOURCE_LAYER,
+        minzoom: 3,
+        maxzoom: 12,
+        layout:{
+          'symbol-placement':'point',
+          'icon-image':'tree-icon',
+          'icon-allow-overlap': true,
+          'icon-ignore-placement': true,
+          'icon-pitch-alignment':'viewport',
+          'icon-size': [
+            'interpolate',['linear'],['zoom'],
+            3, 0.6,   // smaller at low zoom
+            9, 1.2,
+            11.9, 1.5 // slightly smaller overall
+          ]
+        }
+      });
 
-      
       map.addLayer({
         id:'areas-fill',
         type:'fill',
@@ -202,8 +230,25 @@ map.addLayer({
       });
 
       function handleClick(e){
-        const f = (e.features && e.features[0]) || map.queryRenderedFeatures(e.point, {layers:['areas-fill','areas-outline','areas-symbol']})[0];
-        if(!f) return; const p=f.properties||{};
+        const f = (e.features && e.features[0]) ||
+                  map.queryRenderedFeatures(e.point, {layers:['areas-fill','areas-outline','areas-symbol']})[0];
+        if(!f) return;
+        const p=f.properties||{};
+
+        // NEW: set image from p.url
+        const imgWrap = document.getElementById('siteImageWrapper');
+        const imgEl   = document.getElementById('siteImage');
+
+        if (p.url && typeof p.url === 'string' && p.url.trim() !== '') {
+          imgEl.src = p.url;
+          imgEl.alt = p.name || 'Green area image';
+          imgWrap.style.display = 'block';
+        } else {
+          imgEl.src = '';
+          imgWrap.style.display = 'none';
+        }
+
+        // KPIs
         setKPI('kpiO2', p.o2_produced_kg, 'kg');
         setKPI('kpiCO2Seq', p.co2_sequestered_kg, 'kg');
         setKPI('kpiCO2AbsVal', p.co2_absorption_value_eur ?? p.co2_absorption_value, '€');
@@ -216,6 +261,7 @@ map.addLayer({
         setKPI('kpiCO2StockVal', p.co2_stock_value_eur, '€');
         setKPI('kpiEnergyVal', p.energy_value_eur, '€');
         setKPI('kpiH2ORet', p.h2o_retention_l, 'L');
+
         document.getElementById('sidebar').classList.add('open');
       }
 
