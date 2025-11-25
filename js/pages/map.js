@@ -1,19 +1,21 @@
+// js/pages/map.js
 import { setKPI, parseNum } from "../utils/kpi.js";
 import { setupSidebarHandle } from "../utils/sidebar.js";
 import { setupShareButtons, currentUrlWithParams } from "../utils/share.js";
 
 export function initMapPage({ openPage }) {
 
-  const PMTILES_URL = "https://pub-df9eaf452da44f0ea2cbbcb1a6cd55ac.r2.dev/trees.pmtiles";
+  const PMTILES_URL  = "https://pub-df9eaf452da44f0ea2cbbcb1a6cd55ac.r2.dev/trees.pmtiles";
   const SOURCE_LAYER = "trees";
 
   const INITIAL_CENTER = [9.154940775917993, 45.46043264982563];
-  const INITIAL_ZOOM = 10.5;
-  const MIN_ZOOM = 4;
+  const INITIAL_ZOOM   = 10.5;
+  const MIN_ZOOM       = 4;
 
   const protocol = new pmtiles.Protocol();
   maplibregl.addProtocol("pmtiles", protocol.tile);
 
+  // === GREY OSM STYLE (your exact settings) ===
   const style = {
     version: 8,
     sources: {
@@ -30,10 +32,10 @@ export function initMapPage({ openPage }) {
         type: "raster",
         source: "osm",
         paint: {
-          "raster-saturation": -1,      
-          "raster-contrast": 0.05,      
-          "raster-brightness-min": 0, 
-          "raster-brightness-max": 0.8   
+          "raster-saturation": -1,
+          "raster-contrast": 0.05,
+          "raster-brightness-min": 0,
+          "raster-brightness-max": 0.8
         }
       }
     ]
@@ -48,10 +50,10 @@ export function initMapPage({ openPage }) {
     maxZoom: 20
   });
 
-
+  // === CONTROLS (zoom +/- , reset, geolocate) ===
   map.addControl(new maplibregl.NavigationControl({
-    showCompass: false,    
-    showZoom: true          
+    showCompass: false,
+    showZoom: true
   }), "top-right");
 
   map.addControl(new maplibregl.GeolocateControl({
@@ -83,82 +85,41 @@ export function initMapPage({ openPage }) {
   }
   map.addControl(new ResetViewControl(), "top-right");
 
-
-  const sidebar = document.getElementById("sidebar");
+  // === SIDEBAR + DOM REFS ===
+  const sidebar       = document.getElementById("sidebar");
   const sidebarHandle = document.getElementById("sidebarHandle");
   const { positionHandle } = setupSidebarHandle(sidebar, sidebarHandle);
 
   const btnDirections = document.getElementById("btnDirections");
-  const hero = document.getElementById("hero");
-  const siteImage = document.getElementById("siteImage");
-  let lastCenterLL = null;
+  const hero          = document.getElementById("hero");
+  const siteImage     = document.getElementById("siteImage");
 
-  let selectedFeatureId = null;
+  let lastCenterLL       = null;
+  let selectedFeatureId   = null;
   let selectedFeatureName = null;
 
+  // === SHARE BUTTONS (X + FB in hero) ===
   setupShareButtons(() => {
     const title = selectedFeatureName
       ? `Urban Green Lombardy – ${selectedFeatureName}`
       : "Urban Green Lombardy";
+
     const url = currentUrlWithParams({
       area: selectedFeatureName || ""
     });
+
     return { title, url };
   });
 
-
+  // === MAP LOAD ===
   map.on("load", async () => {
 
-    const ICON = 64;
-    const c = document.createElement("canvas");
-    c.width = c.height = ICON;
-    const ctx = c.getContext("2d");
-
-    ctx.beginPath();
-    ctx.arc(ICON * 0.5, ICON * 0.40, ICON * 0.28, 0, Math.PI * 2);
-    ctx.fillStyle = "#22c55e";
-    ctx.shadowColor = "rgba(0,0,0,.18)";
-    ctx.shadowBlur = 4;
-    ctx.fill();
-    ctx.shadowBlur = 0;
-
-    ctx.fillStyle = "#6b4f2a";
-    ctx.fillRect(ICON * 0.47, ICON * 0.46, ICON * 0.06, ICON * 0.26);
-
-    ctx.beginPath();
-    ctx.ellipse(ICON * 0.5, ICON * 0.78, ICON * 0.22, ICON * 0.09, 0, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(0,0,0,.20)";
-    ctx.fill();
-
-    map.addImage("tree-icon", ctx.getImageData(0, 0, ICON, ICON), { pixelRatio: 2 });
-
-    /* PMTILES source */
+    // PMTiles source
     const archive = new pmtiles.PMTiles(PMTILES_URL);
     protocol.add(archive);
     map.addSource("areas", { type: "vector", url: `pmtiles://${PMTILES_URL}` });
 
-    map.addLayer({
-      id: "areas-symbol",
-      type: "symbol",
-      source: "areas",
-      "source-layer": SOURCE_LAYER,
-      minzoom: 3,
-      maxzoom: 12,
-      layout: {
-        "symbol-placement": "point",
-        "icon-image": "tree-icon",
-        "icon-allow-overlap": true,
-        "icon-ignore-placement": true,
-        "icon-pitch-alignment": "viewport",
-        "icon-size": [
-          "interpolate", ["linear"], ["zoom"],
-          3, 0.6,
-          9, 1.2,
-          12, 1.5
-        ]
-      }
-    });
-
+    // === POLYGON LAYERS (do NOT depend on icon) ===
     map.addLayer({
       id: "areas-fill",
       type: "fill",
@@ -187,6 +148,7 @@ export function initMapPage({ openPage }) {
       }
     });
 
+    // Yellow selected outline
     map.addLayer({
       id: "areas-selected",
       type: "line",
@@ -199,6 +161,48 @@ export function initMapPage({ openPage }) {
       },
       filter: ["==", ["id"], -1]
     });
+
+    // === ICON FROM ic-trees.svg ===
+    const img = new Image();
+    img.src = "./svg/ic-treesl.svg";   // your SVG icon in svg folder
+    img.onload = () => {
+      const SIZE = 64;
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = SIZE;
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, SIZE, SIZE);
+      // Draw SVG into canvas, then extract pixels
+      ctx.drawImage(img, 0, 0, SIZE, SIZE);
+      const imageData = ctx.getImageData(0, 0, SIZE, SIZE);
+
+      map.addImage("tree-icon", imageData, { pixelRatio: 2 });
+
+      // Symbol layer now that icon exists
+      map.addLayer({
+        id: "areas-symbol",
+        type: "symbol",
+        source: "areas",
+        "source-layer": SOURCE_LAYER,
+        minzoom: 3,
+        maxzoom: 12,
+        layout: {
+          "symbol-placement": "point",
+          "icon-image": "tree-icon",
+          "icon-allow-overlap": true,
+          "icon-ignore-placement": true,
+          "icon-pitch-alignment": "viewport",
+          "icon-size": [
+            "interpolate", ["linear"], ["zoom"],
+            3, 0.6,
+            9, 1.2,
+            12, 1.5
+          ]
+        }
+      });
+    };
+    img.onerror = (err) => {
+      console.error("Failed to load ./svg/ic-treesl.svg for map icon", err);
+    };
 
     function applySelectionFilter() {
       if (selectedFeatureId != null) {
@@ -220,24 +224,27 @@ export function initMapPage({ openPage }) {
       if (!f) return;
 
       const p = f.properties || {};
-      selectedFeatureId = f.id ?? null;
+      selectedFeatureId   = (typeof f.id === "number" || typeof f.id === "string") ? f.id : null;
       selectedFeatureName = p.name ?? null;
 
       applySelectionFilter();
-      openPage("mapPage");
 
-      document.getElementById("sbTitle").textContent =
-        p.name || "Green Area";
+      if (openPage) openPage("mapPage");
+
+      document.getElementById("sbTitle").textContent = p.name || "Green Area";
 
       if (p.url && String(p.url).trim() !== "") {
         siteImage.src = p.url;
+        siteImage.alt = p.name || "Green area image";
         siteImage.style.display = "block";
+        hero.style.background = "#000";
       } else {
         siteImage.src = "";
         siteImage.style.display = "none";
+        hero.style.background = "#111827";
       }
 
-      setKPI("kpiTrees", p.number_of_plants ?? p.trees_count ?? p.n_trees);
+      setKPI("kpiTrees",  p.number_of_plants ?? p.trees_count ?? p.n_trees);
       setKPI("kpiCO2Seq", p.co2_sequestered_kg ?? p.co2_absorption_kg, "t");
 
       const pm10 = parseNum(p.pm10_capture_g);
@@ -250,36 +257,29 @@ export function initMapPage({ openPage }) {
       setKPI(
         "kpiEur",
         p.co2_absorption_value_eur ??
-          p.co2_stock_value_eur ??
-          p.energy_value_eur,
+        p.co2_stock_value_eur ??
+        p.energy_value_eur,
         "€"
       );
 
       let center = null;
-
       try {
         if (f.geometry?.type === "Polygon") {
           const ring = f.geometry.coordinates[0];
-          let sx = 0,
-            sy = 0;
-          ring.forEach((c) => {
-            sx += c[0];
-            sy += c[1];
-          });
+          let sx = 0, sy = 0;
+          ring.forEach(c => { sx += c[0]; sy += c[1]; });
           center = [sx / ring.length, sy / ring.length];
         } else if (f.geometry?.type === "MultiPolygon") {
           const ring = f.geometry.coordinates[0][0];
-          let sx = 0,
-            sy = 0;
-          ring.forEach((c) => {
-            sx += c[0];
-            sy += c[1];
-          });
+          let sx = 0, sy = 0;
+          ring.forEach(c => { sx += c[0]; sy += c[1]; });
           center = [sx / ring.length, sy / ring.length];
         } else if (f.geometry?.type === "Point") {
           center = f.geometry.coordinates;
         }
-      } catch {}
+      } catch {
+    
+      }
 
       if (!center) {
         center = map.unproject(e.point).toArray();
@@ -292,11 +292,10 @@ export function initMapPage({ openPage }) {
       positionHandle();
     }
 
-    map.on("click", "areas-fill", handleClick);
+    map.on("click", "areas-fill",    handleClick);
     map.on("click", "areas-outline", handleClick);
-    map.on("click", "areas-symbol", handleClick);
-
-    map.on("click", handleClick);
+    map.on("click", "areas-symbol",  handleClick);
+    map.on("click", handleClick); 
 
     positionHandle();
   });
@@ -309,6 +308,4 @@ export function initMapPage({ openPage }) {
       "_blank"
     );
   });
-
-  window.addEventListener("unload", () => protocol.removeAll());
 }
