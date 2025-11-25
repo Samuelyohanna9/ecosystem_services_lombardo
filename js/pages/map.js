@@ -14,18 +14,30 @@ export function initMapPage({ openPage }){
   const protocol = new pmtiles.Protocol();
   maplibregl.addProtocol("pmtiles", protocol.tile);
 
-  const style = {
-    version: 8,
-    sources: {
-      osm: {
-        type: "raster",
-        tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-        tileSize: 256,
-        attribution: "© OpenStreetMap contributors"
-      }
-    },
-    layers: [{ id: "osm", type: "raster", source: "osm" }]
-  };
+const style = {
+  version: 8,
+  sources: {
+    osm: {
+      type: "raster",
+      tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+      tileSize: 256,
+      attribution: "© OpenStreetMap contributors"
+    }
+  },
+  layers: [{
+    id: "osm",
+    type: "raster",
+    source: "osm",
+    paint: {
+      // make the basemap grey
+      "raster-saturation": -1,       // -1 = fully desaturated
+      "raster-contrast": 0.1,        // small contrast boost (optional)
+      "raster-brightness-min": 0.9,  // lighten a bit (optional)
+      "raster-brightness-max": 1.1
+    }
+  }]
+};
+
 
   const map = new maplibregl.Map({
     container:"mapCanvas",

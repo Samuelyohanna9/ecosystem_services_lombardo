@@ -14,7 +14,6 @@ navLinks.forEach(a=>{
   a.addEventListener("click", ()=>openPage(a.dataset.page));
 });
 
-// init each page (map only boots once)
 initHomePage();
 initTreesPage();
 initMapPage({ openPage });
