@@ -1,4 +1,3 @@
-// js/pages/map.js
 import { setKPI, parseNum } from "../utils/kpi.js";
 import { setupSidebarHandle } from "../utils/sidebar.js";
 import { setupShareButtons, currentUrlWithParams } from "../utils/share.js";
@@ -15,7 +14,6 @@ export function initMapPage({ openPage }) {
   const protocol = new pmtiles.Protocol();
   maplibregl.addProtocol("pmtiles", protocol.tile);
 
-  // === GREY OSM STYLE (your exact settings) ===
   const style = {
     version: 8,
     sources: {
@@ -50,7 +48,6 @@ export function initMapPage({ openPage }) {
     maxZoom: 20
   });
 
-  // === CONTROLS (zoom +/- , reset, geolocate) ===
   map.addControl(new maplibregl.NavigationControl({
     showCompass: false,
     showZoom: true
@@ -61,6 +58,7 @@ export function initMapPage({ openPage }) {
     trackUserLocation: true,
     showUserHeading: true
   }), "top-right");
+
 
   class ResetViewControl {
     onAdd(map) {
@@ -85,7 +83,6 @@ export function initMapPage({ openPage }) {
   }
   map.addControl(new ResetViewControl(), "top-right");
 
-  // === SIDEBAR + DOM REFS ===
   const sidebar       = document.getElementById("sidebar");
   const sidebarHandle = document.getElementById("sidebarHandle");
   const { positionHandle } = setupSidebarHandle(sidebar, sidebarHandle);
@@ -95,10 +92,8 @@ export function initMapPage({ openPage }) {
   const siteImage     = document.getElementById("siteImage");
 
   let lastCenterLL       = null;
-  let selectedFeatureId   = null;
   let selectedFeatureName = null;
 
-  // === SHARE BUTTONS (X + FB in hero) ===
   setupShareButtons(() => {
     const title = selectedFeatureName
       ? `Urban Green Lombardy – ${selectedFeatureName}`
@@ -111,15 +106,12 @@ export function initMapPage({ openPage }) {
     return { title, url };
   });
 
-  // === MAP LOAD ===
   map.on("load", async () => {
 
-    // PMTiles source
     const archive = new pmtiles.PMTiles(PMTILES_URL);
     protocol.add(archive);
     map.addSource("areas", { type: "vector", url: `pmtiles://${PMTILES_URL}` });
 
-    // === POLYGON LAYERS (do NOT depend on icon) ===
     map.addLayer({
       id: "areas-fill",
       type: "fill",
@@ -148,36 +140,38 @@ export function initMapPage({ openPage }) {
       }
     });
 
-    // Yellow selected outline
+    map.addSource("selected-area", {
+      type: "geojson",
+      data: {
+        type: "FeatureCollection",
+        features: []
+      }
+    });
+
     map.addLayer({
       id: "areas-selected",
       type: "line",
-      source: "areas",
-      "source-layer": SOURCE_LAYER,
+      source: "selected-area",
       minzoom: 11,
       paint: {
         "line-color": "#fbbc04",
         "line-width": 3.5
-      },
-      filter: ["==", ["id"], -1]
+      }
     });
 
-    // === ICON FROM ic-trees.svg ===
     const img = new Image();
-    img.src = "./svg/ic-treesl.svg";   // your SVG icon in svg folder
+    img.src = "./svg/ic-treesl.svg"; 
     img.onload = () => {
       const SIZE = 64;
       const canvas = document.createElement("canvas");
       canvas.width = canvas.height = SIZE;
       const ctx = canvas.getContext("2d");
       ctx.clearRect(0, 0, SIZE, SIZE);
-      // Draw SVG into canvas, then extract pixels
       ctx.drawImage(img, 0, 0, SIZE, SIZE);
       const imageData = ctx.getImageData(0, 0, SIZE, SIZE);
 
       map.addImage("tree-icon", imageData, { pixelRatio: 2 });
 
-      // Symbol layer now that icon exists
       map.addLayer({
         id: "areas-symbol",
         type: "symbol",
@@ -204,14 +198,15 @@ export function initMapPage({ openPage }) {
       console.error("Failed to load ./svg/ic-treesl.svg for map icon", err);
     };
 
-    function applySelectionFilter() {
-      if (selectedFeatureId != null) {
-        map.setFilter("areas-selected", ["==", ["id"], selectedFeatureId]);
-      } else if (selectedFeatureName) {
-        map.setFilter("areas-selected", ["==", ["get", "name"], selectedFeatureName]);
-      } else {
-        map.setFilter("areas-selected", ["==", ["id"], -1]);
-      }
+    function highlightFeatureGeometry(f) {
+      const src = map.getSource("selected-area");
+      if (!src) return;
+
+      src.setData({
+        type: "Feature",
+        geometry: f.geometry,
+        properties: {}
+      });
     }
 
     function handleClick(e) {
@@ -224,10 +219,9 @@ export function initMapPage({ openPage }) {
       if (!f) return;
 
       const p = f.properties || {};
-      selectedFeatureId   = (typeof f.id === "number" || typeof f.id === "string") ? f.id : null;
       selectedFeatureName = p.name ?? null;
 
-      applySelectionFilter();
+      highlightFeatureGeometry(f);
 
       if (openPage) openPage("mapPage");
 
@@ -295,7 +289,7 @@ export function initMapPage({ openPage }) {
     map.on("click", "areas-fill",    handleClick);
     map.on("click", "areas-outline", handleClick);
     map.on("click", "areas-symbol",  handleClick);
-    map.on("click", handleClick); 
+    map.on("click", handleClick);
 
     positionHandle();
   });
