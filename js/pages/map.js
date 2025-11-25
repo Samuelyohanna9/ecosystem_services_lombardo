@@ -14,9 +14,6 @@ export function initMapPage({ openPage }) {
   const protocol = new pmtiles.Protocol();
   maplibregl.addProtocol("pmtiles", protocol.tile);
 
-  /* ---------------------------
-      PERFECT BLACK & WHITE OSM
-     -------------------------- */
   const style = {
     version: 8,
     sources: {
@@ -33,18 +30,15 @@ export function initMapPage({ openPage }) {
         type: "raster",
         source: "osm",
         paint: {
-          "raster-saturation": -1,     // REMOVE ALL COLOR
-          "raster-contrast": 0.35,     // INCREASE contrast (fixes washed-out look)
-          "raster-brightness-min": 0.65, 
-          "raster-brightness-max": 1.05 // slight darkening, NOT white
+          "raster-saturation": -1,      
+          "raster-contrast": 0.05,      
+          "raster-brightness-min": 0, 
+          "raster-brightness-max": 0.8   
         }
       }
     ]
   };
 
-  /* ---------------------------
-        MAP INIT
-     -------------------------- */
   const map = new maplibregl.Map({
     container: "mapCanvas",
     style,
@@ -54,15 +48,18 @@ export function initMapPage({ openPage }) {
     maxZoom: 20
   });
 
-  /* top-right controls (only zoom & geolocate) */
-  map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), "top-right");
+
+  map.addControl(new maplibregl.NavigationControl({
+    showCompass: false,    
+    showZoom: true          
+  }), "top-right");
+
   map.addControl(new maplibregl.GeolocateControl({
     positionOptions: { enableHighAccuracy: true },
     trackUserLocation: true,
     showUserHeading: true
   }), "top-right");
 
-  /* Reset control */
   class ResetViewControl {
     onAdd(map) {
       this._map = map;
@@ -73,10 +70,10 @@ export function initMapPage({ openPage }) {
       this._container.innerHTML = `
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M4 9V4h5M20 15v5h-5M4 4l6 6M20 20l-6-6"></path>
-        </svg>`;
-      this._container.onclick = () => {
+        </svg>
+      `;
+      this._container.onclick = () =>
         map.easeTo({ center: INITIAL_CENTER, zoom: MIN_ZOOM });
-      };
       return this._container;
     }
     onRemove() {
@@ -86,9 +83,7 @@ export function initMapPage({ openPage }) {
   }
   map.addControl(new ResetViewControl(), "top-right");
 
-  /* ---------------------------
-       SIDEBAR & SHARE
-     -------------------------- */
+
   const sidebar = document.getElementById("sidebar");
   const sidebarHandle = document.getElementById("sidebarHandle");
   const { positionHandle } = setupSidebarHandle(sidebar, sidebarHandle);
@@ -96,8 +91,8 @@ export function initMapPage({ openPage }) {
   const btnDirections = document.getElementById("btnDirections");
   const hero = document.getElementById("hero");
   const siteImage = document.getElementById("siteImage");
-
   let lastCenterLL = null;
+
   let selectedFeatureId = null;
   let selectedFeatureName = null;
 
@@ -105,17 +100,15 @@ export function initMapPage({ openPage }) {
     const title = selectedFeatureName
       ? `Urban Green Lombardy – ${selectedFeatureName}`
       : "Urban Green Lombardy";
-
-    const url = currentUrlWithParams({ area: selectedFeatureName || "" });
+    const url = currentUrlWithParams({
+      area: selectedFeatureName || ""
+    });
     return { title, url };
   });
 
-  /* ---------------------------
-       MAP LOADED
-     -------------------------- */
+
   map.on("load", async () => {
 
-    /* custom icon */
     const ICON = 64;
     const c = document.createElement("canvas");
     c.width = c.height = ICON;
@@ -139,13 +132,11 @@ export function initMapPage({ openPage }) {
 
     map.addImage("tree-icon", ctx.getImageData(0, 0, ICON, ICON), { pixelRatio: 2 });
 
-    /* PMTiles source */
-    const archive = new pmtiles.PMTiles(PMILES_URL);
+    /* PMTILES source */
+    const archive = new pmtiles.PMTiles(PMTILES_URL);
     protocol.add(archive);
-
     map.addSource("areas", { type: "vector", url: `pmtiles://${PMTILES_URL}` });
 
-    /* tree symbols */
     map.addLayer({
       id: "areas-symbol",
       type: "symbol",
@@ -159,11 +150,15 @@ export function initMapPage({ openPage }) {
         "icon-allow-overlap": true,
         "icon-ignore-placement": true,
         "icon-pitch-alignment": "viewport",
-        "icon-size": ["interpolate", ["linear"], ["zoom"], 3, 0.6, 9, 1.2, 11.9, 1.5]
+        "icon-size": [
+          "interpolate", ["linear"], ["zoom"],
+          3, 0.6,
+          9, 1.2,
+          12, 1.5
+        ]
       }
     });
 
-    /* area fill */
     map.addLayer({
       id: "areas-fill",
       type: "fill",
@@ -172,7 +167,11 @@ export function initMapPage({ openPage }) {
       minzoom: 11,
       paint: {
         "fill-color": "#22c55e",
-        "fill-opacity": ["interpolate", ["linear"], ["zoom"], 11, 0.25, 13, 0.45]
+        "fill-opacity": [
+          "interpolate", ["linear"], ["zoom"],
+          11, 0.25,
+          13, 0.45
+        ]
       }
     });
 
@@ -182,10 +181,12 @@ export function initMapPage({ openPage }) {
       source: "areas",
       "source-layer": SOURCE_LAYER,
       minzoom: 11,
-      paint: { "line-color": "#052e16", "line-width": 1.2 }
+      paint: {
+        "line-color": "#052e16",
+        "line-width": 1.2
+      }
     });
 
-    /* highlight */
     map.addLayer({
       id: "areas-selected",
       type: "line",
@@ -194,15 +195,13 @@ export function initMapPage({ openPage }) {
       minzoom: 11,
       paint: {
         "line-color": "#fbbc04",
-        "line-width": 3.5,
-        "line-opacity": 1
+        "line-width": 3.5
       },
       filter: ["==", ["id"], -1]
     });
 
-    /* selection handling */
     function applySelectionFilter() {
-      if (selectedFeatureId !== null) {
+      if (selectedFeatureId != null) {
         map.setFilter("areas-selected", ["==", ["id"], selectedFeatureId]);
       } else if (selectedFeatureName) {
         map.setFilter("areas-selected", ["==", ["get", "name"], selectedFeatureName]);
@@ -214,7 +213,10 @@ export function initMapPage({ openPage }) {
     function handleClick(e) {
       const f =
         (e.features && e.features[0]) ||
-        map.queryRenderedFeatures(e.point, { layers: ["areas-fill", "areas-outline", "areas-symbol"] })[0];
+        map.queryRenderedFeatures(e.point, {
+          layers: ["areas-fill", "areas-outline", "areas-symbol"]
+        })[0];
+
       if (!f) return;
 
       const p = f.properties || {};
@@ -224,43 +226,57 @@ export function initMapPage({ openPage }) {
       applySelectionFilter();
       openPage("mapPage");
 
-      document.getElementById("sbTitle").textContent = p.name || "Green Area";
+      document.getElementById("sbTitle").textContent =
+        p.name || "Green Area";
 
-      if (p.url?.trim()) {
+      if (p.url && String(p.url).trim() !== "") {
         siteImage.src = p.url;
         siteImage.style.display = "block";
-        hero.style.background = "#000";
       } else {
         siteImage.src = "";
         siteImage.style.display = "none";
-        hero.style.background = "#111827";
       }
 
-      /* KPIs */
       setKPI("kpiTrees", p.number_of_plants ?? p.trees_count ?? p.n_trees);
       setKPI("kpiCO2Seq", p.co2_sequestered_kg ?? p.co2_absorption_kg, "t");
 
       const pm10 = parseNum(p.pm10_capture_g);
       const pm25 = parseNum(p.pm25_capture_g);
-      setKPI("kpiPM", (pm10 || 0) + (pm25 || 0), "g");
+      const pmTot = (isFinite(pm10) ? pm10 : 0) + (isFinite(pm25) ? pm25 : 0);
+      setKPI("kpiPM", pmTot, "g");
 
       setKPI("kpiRain", p.h2o_precipitation_l ?? p.h2o_retention_l, "L");
-      setKPI("kpiEur", p.co2_absorption_value_eur ?? p.co2_stock_value_eur ?? p.energy_value_eur, "€");
 
-      /* compute centroid */
+      setKPI(
+        "kpiEur",
+        p.co2_absorption_value_eur ??
+          p.co2_stock_value_eur ??
+          p.energy_value_eur,
+        "€"
+      );
+
       let center = null;
+
       try {
-        if (f.geometry.type === "Polygon") {
+        if (f.geometry?.type === "Polygon") {
           const ring = f.geometry.coordinates[0];
-          const sx = ring.reduce((a, c) => a + c[0], 0);
-          const sy = ring.reduce((a, c) => a + c[1], 0);
+          let sx = 0,
+            sy = 0;
+          ring.forEach((c) => {
+            sx += c[0];
+            sy += c[1];
+          });
           center = [sx / ring.length, sy / ring.length];
-        } else if (f.geometry.type === "MultiPolygon") {
+        } else if (f.geometry?.type === "MultiPolygon") {
           const ring = f.geometry.coordinates[0][0];
-          const sx = ring.reduce((a, c) => a + c[0], 0);
-          const sy = ring.reduce((a, c) => a + c[1], 0);
+          let sx = 0,
+            sy = 0;
+          ring.forEach((c) => {
+            sx += c[0];
+            sy += c[1];
+          });
           center = [sx / ring.length, sy / ring.length];
-        } else if (f.geometry.type === "Point") {
+        } else if (f.geometry?.type === "Point") {
           center = f.geometry.coordinates;
         }
       } catch {}
@@ -268,6 +284,7 @@ export function initMapPage({ openPage }) {
       if (!center) {
         center = map.unproject(e.point).toArray();
       }
+
       lastCenterLL = center;
 
       btnDirections.disabled = false;
@@ -278,6 +295,7 @@ export function initMapPage({ openPage }) {
     map.on("click", "areas-fill", handleClick);
     map.on("click", "areas-outline", handleClick);
     map.on("click", "areas-symbol", handleClick);
+
     map.on("click", handleClick);
 
     positionHandle();
