@@ -10,44 +10,23 @@
 </head>
 
 <body>
-<header>
-  <div class="brand">
-    <img src="./svg/lombardy.png" alt="R3GIS">
-  </div>
 
-  <nav>
-    <a data-page="homePage">HOME</a>
-    <a data-page="treesPage">TREES</a>
-    <a data-page="mapPage" class="active">MAP</a>
-  </nav>
+<header>
+  <div class="brand-combo">
+    <img class="logo-left" src="./svg/lombardy.png" alt="Lombardy Logo">
+    <img class="logo-right" src="./svg/forestami.png" alt="Forestami Logo">
+  </div>
 </header>
 
+
 <div id="app">
-  <!-- HOME -->
-  <section id="homePage" class="page">
-    <div class="placeholder">
-      <div>
-        <h2>Home</h2>
-        <p>Welcome to Urban Green Lombardy.</p>
-        <p>Use the MAP tab to explore green areas.</p>
-      </div>
-    </div>
-  </section>
 
-  <!-- TREES -->
-  <section id="treesPage" class="page">
-    <div class="placeholder">
-      <div>
-        <h2>Trees</h2>
-        <p>This section shows tree statistics...</p>
-        <p>(...)</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- MAP -->
+  <!-- ONLY MAP PAGE -->
   <section id="mapPage" class="page active">
+
     <aside id="sidebar">
+
+      <!-- HERO -->
       <div id="hero" class="hero">
         <img id="siteImage" src="" alt="Green area image" style="display:none;">
         <div class="hero-overlay">
@@ -56,15 +35,17 @@
               <path d="M15 6l-6 6 6 6" stroke="#111827" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
+
           <div class="hero-right">
-            <button class="hero-btn" id="btnShareFb" title="Share Facebook" aria-label="Share on Facebook">
-              <img src="./svg/btn-share-fb.svg" alt="">
+            <button class="hero-btn" id="btnShareFb" title="Share Facebook">
+              <img src="./svg/btn-share-fb.svg" alt="Facebook">
             </button>
-            <button class="hero-btn" id="btnShareX" title="Share X" aria-label="Share on X">X</button>
+            <button class="hero-btn" id="btnShareX" title="Share X">X</button>
           </div>
         </div>
       </div>
 
+      <!-- TITLE + DIRECTIONS -->
       <div class="content">
         <div class="title-row">
           <div class="title-wrap">
@@ -78,13 +59,13 @@
         </div>
       </div>
 
-      <!-- KPIs -->
+      <!-- KPIs (unchanged) -->
       <div class="kpis">
         <div class="kpi" data-pos="left">
           <div class="icon"><img src="./svg/ic-trees.svg" alt=""></div>
           <div class="value-row">
             <div id="kpiTrees">—</div>
-            <div class="info-btn" aria-hidden="true">i
+            <div class="info-btn">i
               <div class="info-tip">Trees found inside the selected green area.</div>
             </div>
           </div>
@@ -95,7 +76,7 @@
           <div class="icon"><img src="./svg/ic-co2.svg" alt=""></div>
           <div class="value-row">
             <div id="kpiCO2Seq">—</div>
-            <div class="info-btn" aria-hidden="true">i
+            <div class="info-btn">i
               <div class="info-tip">Amount of carbon dioxide (CO₂) sequestered each year.</div>
             </div>
           </div>
@@ -106,7 +87,7 @@
           <div class="icon"><img src="./svg/ic-pm.svg" alt=""></div>
           <div class="value-row">
             <div id="kpiPM">—</div>
-            <div class="info-btn" aria-hidden="true">i
+            <div class="info-btn">i
               <div class="info-tip">Amount of pollutants (PM, O₃, NOₓ, SO₂) removed each year.</div>
             </div>
           </div>
@@ -117,7 +98,7 @@
           <div class="icon"><img src="./svg/ic-save-energy.svg" alt=""></div>
           <div class="value-row">
             <div id="kpiRain">—</div>
-            <div class="info-btn" aria-hidden="true">i
+            <div class="info-btn">i
               <div class="info-tip">Amount of rainfall intercepted per year.</div>
             </div>
           </div>
@@ -128,22 +109,24 @@
           <div class="icon"><img src="./svg/ic-economic-value.svg" alt=""></div>
           <div class="value-row">
             <div id="kpiEur">—</div>
-            <div class="info-btn" aria-hidden="true">i
+            <div class="info-btn">i
               <div class="info-tip">Economic value of ecosystem services provided by plants each year.</div>
             </div>
           </div>
           <div class="t">Economic<br>value</div>
         </div>
       </div>
+
     </aside>
 
-    <button id="sidebarHandle" class="sidebar-handle" aria-label="Show sidebar" title="Show/Hide sidebar">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
+    <button id="sidebarHandle" class="sidebar-handle" aria-label="Show sidebar">
+      <svg viewBox="0 0 24 24">
         <path d="M9 6l6 6-6 6"></path>
       </svg>
     </button>
 
     <div id="mapCanvas"></div>
+
   </section>
 </div>
 
@@ -156,21 +139,23 @@
   </div>
 
   <div class="footer-icons">
-    <a href="https://www.youtube.com/user/regionelombardia" target="_blank" rel="noopener" aria-label="YouTube">
-      <img src="./svg/youtube.svg" alt="YouTube">
+    <a href="https://www.youtube.com/user/regionelombardia" target="_blank">
+      <img src="./svg/youtube.svg" alt="">
     </a>
-    <a href="https://x.com/LombardiaOnLine" target="_blank" rel="noopener" aria-label="X">
+
+    <a href="https://x.com/LombardiaOnLine" target="_blank">
       <div class="x-pill">X</div>
     </a>
-    <a href="https://www.facebook.com/Regione.Lombardia.official/" target="_blank" rel="noopener" aria-label="Facebook">
-      <img src="./svg/btn-share-fb.svg" alt="Facebook">
+
+    <a href="https://www.facebook.com/Regione.Lombardia.official/" target="_blank">
+      <img src="./svg/btn-share-fb.svg" alt="">
     </a>
   </div>
 </footer>
 
 <script src="./vendor/maplibre-gl.js"></script>
 <script src="./vendor/pmtiles.js"></script>
-
 <script type="module" src="./js/main.js"></script>
+
 </body>
 </html>
