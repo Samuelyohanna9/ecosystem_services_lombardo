@@ -4,8 +4,7 @@ import { setupShareButtons, currentUrlWithParams } from "../utils/share.js";
 
 export function initMapPage({ openPage }) {
 
-  const PMTILES_URL =
-    "https://pub-df9eaf452da44f0ea2cbbcb1a6cd55ac.r2.dev/trees.pmtiles";
+  const PMTILES_URL = "https://pub-df9eaf452da44f0ea2cbbcb1a6cd55ac.r2.dev/trees.pmtiles";
   const SOURCE_LAYER = "trees";
 
   const INITIAL_CENTER = [9.154940775917993, 45.46043264982563];
@@ -15,24 +14,34 @@ export function initMapPage({ openPage }) {
   const protocol = new pmtiles.Protocol();
   maplibregl.addProtocol("pmtiles", protocol.tile);
 
-  // Base style
+  /* TRUE GREYSCALE BACKGROUND */
   const style = {
-    version: 8,
-    sources: {
-      osm: {
-        type: "raster",
-        tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-        tileSize: 256,
-        attribution: "© OpenStreetMap",
-      },
+    "version": 8,
+    "sources": {
+      "osm": {
+        "type": "raster",
+        "tiles": ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+        "tileSize": 256,
+        "attribution": "© OpenStreetMap contributors"
+      }
     },
-    layers: [
+    "layers": [
       {
-        id: "osm",
-        type: "raster",
-        source: "osm"
-      },
-    ],
+        "id": "osm",
+        "type": "raster",
+        "source": "osm",
+
+        /* TRUE BLACK & WHITE FILTER */
+        "paint": {
+          "raster-color-matrix": [
+            0.2126, 0.2126, 0.2126, 0, 0,
+            0.7152, 0.7152, 0.7152, 0, 0,
+            0.0722, 0.0722, 0.0722, 0, 0,
+            0,      0,      0,      1, 0
+          ]
+        }
+      }
+    ]
   };
 
   const map = new maplibregl.Map({
@@ -41,36 +50,29 @@ export function initMapPage({ openPage }) {
     center: INITIAL_CENTER,
     zoom: INITIAL_ZOOM,
     minZoom: MIN_ZOOM,
-    maxZoom: 20,
+    maxZoom: 20
   });
 
-  // Zoom & geolocate only (NO fullscreen)
-  map.addControl(new maplibregl.NavigationControl({
-    showCompass: false   // remove compass
+  /* MAP CONTROLS (KEEP YOURS) */
+  map.addControl(new maplibregl.NavigationControl(), "top-right");
+  map.addControl(new maplibregl.FullscreenControl(), "top-right");
+  map.addControl(new maplibregl.GeolocateControl({
+    positionOptions: { enableHighAccuracy: true },
+    trackUserLocation: true,
+    showUserHeading: true
   }), "top-right");
 
-  map.addControl(
-    new maplibregl.GeolocateControl({
-      positionOptions: { enableHighAccuracy: true },
-      trackUserLocation: true,
-      showUserHeading: true,
-    }),
-    "top-right"
-  );
-
-  // Reset view button
+  /* RESET VIEW BUTTON */
   class ResetViewControl {
     onAdd(map) {
       this._map = map;
       this._container = document.createElement("button");
-      this._container.className =
-        "reset-ctrl maplibregl-ctrl maplibregl-ctrl-group";
+      this._container.className = "reset-ctrl maplibregl-ctrl maplibregl-ctrl-group";
       this._container.type = "button";
       this._container.title = "Reset view";
       this._container.innerHTML = `
-        <svg viewBox="0 0 24 24">
-          <path d="M4 9V4h5M20 15v5h-5M4 4l6 6M20 20l-6-6"></path>
-        </svg>`;
+        <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 15v5h-5M4 4l6 6M20 20l-6-6"></path></svg>
+      `;
       this._container.onclick = () => {
         map.easeTo({ center: INITIAL_CENTER, zoom: MIN_ZOOM });
       };
@@ -83,7 +85,7 @@ export function initMapPage({ openPage }) {
   }
   map.addControl(new ResetViewControl(), "top-right");
 
-  // Sidebar
+  /* SIDEBAR */
   const sidebar = document.getElementById("sidebar");
   const sidebarHandle = document.getElementById("sidebarHandle");
   const { positionHandle } = setupSidebarHandle(sidebar, sidebarHandle);
@@ -96,73 +98,35 @@ export function initMapPage({ openPage }) {
   let selectedFeatureId = null;
   let selectedFeatureName = null;
 
-  // Social sharing
+  /* SHARING */
   setupShareButtons(() => {
-    const title = selectedFeatureName
-      ? `Urban Green – ${selectedFeatureName}`
-      : "Urban Green Lombardy";
-
-    const url = currentUrlWithParams({
-      area: selectedFeatureName || "",
-    });
-
-    return { title, url };
+    return {
+      title: selectedFeatureName
+        ? `Urban Green Lombardy – ${selectedFeatureName}`
+        : "Urban Green Lombardy",
+      url: currentUrlWithParams({
+        area: selectedFeatureName || ""
+      })
+    };
   });
 
-  // -------------------------------------------------------
-  // MAP LOAD
-  // -------------------------------------------------------
   map.on("load", async () => {
-    //
-    // 🎨 MAKE BASEMAP GREY **after style loads**
-    //
-    map.setPaintProperty("osm", "raster-saturation", -1);
-    map.setPaintProperty("osm", "raster-brightness-min", 0.85);
-    map.setPaintProperty("osm", "raster-brightness-max", 1.05);
-    map.setPaintProperty("osm", "raster-contrast", 0.1);
 
-    //
-    // TREE ICON
-    //
-    const ICON = 64;
-    const c = document.createElement("canvas");
+    /* ICON */
+    const ICON = 64, c = document.createElement("canvas");
     c.width = c.height = ICON;
     const ctx = c.getContext("2d");
+    ctx.beginPath(); ctx.arc(ICON * 0.5, ICON * 0.40, ICON * 0.28, 0, Math.PI * 2);
+    ctx.fillStyle = "#22c55e"; ctx.fill();
+    ctx.fillStyle = "#6b4f2a"; ctx.fillRect(ICON * 0.47, ICON * 0.46, ICON * 0.06, ICON * 0.26);
 
-    ctx.beginPath();
-    ctx.arc(ICON * 0.5, ICON * 0.40, ICON * 0.28, 0, Math.PI * 2);
-    ctx.fillStyle = "#22c55e";
-    ctx.shadowColor = "rgba(0,0,0,.18)";
-    ctx.shadowBlur = 4;
-    ctx.fill();
-    ctx.shadowBlur = 0;
+    map.addImage("tree-icon", ctx.getImageData(0, 0, ICON, ICON), { pixelRatio: 2 });
 
-    ctx.fillStyle = "#6b4f2a";
-    ctx.fillRect(ICON * 0.47, ICON * 0.46, ICON * 0.06, ICON * 0.26);
-
-    ctx.beginPath();
-    ctx.ellipse(ICON * 0.5, ICON * 0.78, ICON * 0.22, ICON * 0.09, 0, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(0,0,0,.20)";
-    ctx.fill();
-
-    map.addImage("tree-icon", ctx.getImageData(0, 0, ICON, ICON), {
-      pixelRatio: 2,
-    });
-
-    //
-    // PMTILES SOURCE
-    //
+    /* PMTILES */
     const archive = new pmtiles.PMTiles(PMTILES_URL);
     protocol.add(archive);
+    map.addSource("areas", { type: "vector", url: `pmtiles://${PMTILES_URL}` });
 
-    map.addSource("areas", {
-      type: "vector",
-      url: `pmtiles://${PMTILES_URL}`,
-    });
-
-    //
-    // SYMBOL LAYER
-    //
     map.addLayer({
       id: "areas-symbol",
       type: "symbol",
@@ -171,20 +135,12 @@ export function initMapPage({ openPage }) {
       minzoom: 3,
       maxzoom: 12,
       layout: {
+        "symbol-placement": "point",
         "icon-image": "tree-icon",
-        "icon-size": [
-          "interpolate", ["linear"], ["zoom"],
-          3, 0.6,
-          9, 1.2,
-          11.9, 1.5,
-        ],
-        "icon-allow-overlap": true,
-      },
+        "icon-allow-overlap": true
+      }
     });
 
-    //
-    // FILL / OUTLINE LAYERS
-    //
     map.addLayer({
       id: "areas-fill",
       type: "fill",
@@ -193,12 +149,8 @@ export function initMapPage({ openPage }) {
       minzoom: 11,
       paint: {
         "fill-color": "#22c55e",
-        "fill-opacity": [
-          "interpolate", ["linear"], ["zoom"],
-          11, 0.25,
-          13, 0.45,
-        ],
-      },
+        "fill-opacity": 0.45
+      }
     });
 
     map.addLayer({
@@ -209,13 +161,10 @@ export function initMapPage({ openPage }) {
       minzoom: 11,
       paint: {
         "line-color": "#052e16",
-        "line-width": 1.2,
-      },
+        "line-width": 1.2
+      }
     });
 
-    //
-    // SELECTED HIGHLIGHT
-    //
     map.addLayer({
       id: "areas-selected",
       type: "line",
@@ -224,17 +173,13 @@ export function initMapPage({ openPage }) {
       minzoom: 11,
       paint: {
         "line-color": "#fbbc04",
-        "line-width": 3.5,
-        "line-opacity": 1,
+        "line-width": 3.5
       },
-      filter: ["==", ["id"], -1],
+      filter: ["==", ["id"], -1]
     });
 
-    //
-    // CLICK HANDLER
-    //
     function applySelectionFilter() {
-      if (selectedFeatureId !== null) {
+      if (selectedFeatureId != null) {
         map.setFilter("areas-selected", ["==", ["id"], selectedFeatureId]);
       } else if (selectedFeatureName) {
         map.setFilter("areas-selected", ["==", ["get", "name"], selectedFeatureName]);
@@ -244,10 +189,9 @@ export function initMapPage({ openPage }) {
     }
 
     function handleClick(e) {
-      const f =
-        e.features?.[0] ||
+      const f = e.features?.[0] ||
         map.queryRenderedFeatures(e.point, {
-          layers: ["areas-fill", "areas-outline", "areas-symbol"],
+          layers: ["areas-fill", "areas-outline", "areas-symbol"]
         })[0];
 
       if (!f) return;
@@ -255,26 +199,21 @@ export function initMapPage({ openPage }) {
       const p = f.properties || {};
       selectedFeatureId = f.id ?? null;
       selectedFeatureName = p.name ?? null;
-      applySelectionFilter();
 
+      applySelectionFilter();
       openPage("mapPage");
 
-      document.getElementById("sbTitle").textContent =
-        p.name || "Green Area";
+      document.getElementById("sbTitle").textContent = p.name || "Green Area";
 
-      // Image
       if (p.url?.trim()) {
         siteImage.src = p.url;
-        siteImage.alt = p.name;
         siteImage.style.display = "block";
         hero.style.background = "#000";
       } else {
-        siteImage.src = "";
         siteImage.style.display = "none";
         hero.style.background = "#111827";
       }
 
-      // KPIs
       setKPI("kpiTrees", p.number_of_plants ?? p.trees_count ?? p.n_trees);
       setKPI("kpiCO2Seq", p.co2_sequestered_kg ?? p.co2_absorption_kg, "t");
 
@@ -283,43 +222,36 @@ export function initMapPage({ openPage }) {
       setKPI("kpiPM", (pm10 || 0) + (pm25 || 0), "g");
 
       setKPI("kpiRain", p.h2o_precipitation_l ?? p.h2o_retention_l, "L");
-
-      setKPI(
-        "kpiEur",
+      setKPI("kpiEur",
         p.co2_absorption_value_eur ??
-          p.co2_stock_value_eur ??
-          p.energy_value_eur,
+        p.co2_stock_value_eur ??
+        p.energy_value_eur,
         "€"
       );
 
-      // Centroid
-      let center;
-      try {
-        if (f.geometry.type === "Polygon") {
-          const ring = f.geometry.coordinates[0];
-          const sx = ring.reduce((a, c) => a + c[0], 0);
-          const sy = ring.reduce((a, c) => a + c[1], 0);
-          center = [sx / ring.length, sy / ring.length];
-        }
-      } catch {}
+      let center = f.geometry.coordinates;
+      if (f.geometry.type === "Polygon") {
+        const ring = f.geometry.coordinates[0];
+        let sx = 0, sy = 0;
+        ring.forEach(c => { sx += c[0]; sy += c[1]; });
+        center = [sx / ring.length, sy / ring.length];
+      }
 
-      if (!center) center = map.unproject(e.point).toArray();
       lastCenterLL = center;
-
       btnDirections.disabled = false;
       sidebar.classList.add("open");
       positionHandle();
     }
 
+    map.on("click", handleClick);
     map.on("click", "areas-fill", handleClick);
     map.on("click", "areas-outline", handleClick);
     map.on("click", "areas-symbol", handleClick);
-    map.on("click", handleClick);
 
     positionHandle();
   });
 
-  btnDirections.addEventListener("click", () => {
+  document.getElementById("btnDirections").addEventListener("click", () => {
     if (!lastCenterLL) return;
     const [lng, lat] = lastCenterLL;
     window.open(
