@@ -1,3 +1,4 @@
+// js/pages/map.js
 import { setKPI, parseNum } from "../utils/kpi.js";
 import { setupSidebarHandle } from "../utils/sidebar.js";
 import { setupShareButtons, currentUrlWithParams } from "../utils/share.js";
@@ -14,30 +15,24 @@ export function initMapPage({ openPage }){
   const protocol = new pmtiles.Protocol();
   maplibregl.addProtocol("pmtiles", protocol.tile);
 
-const style = {
-  version: 8,
-  sources: {
-    osm: {
+  // normal OSM raster style
+  const style = {
+    version: 8,
+    sources: {
+      osm: {
+        type: "raster",
+        tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+        tileSize: 256,
+        attribution: "© OpenStreetMap contributors"
+      }
+    },
+    layers: [{
+      id: "osm",
       type: "raster",
-      tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-      tileSize: 256,
-      attribution: "© OpenStreetMap contributors"
-    }
-  },
-  layers: [{
-    id: "osm",
-    type: "raster",
-    source: "osm",
-    paint: {
-      // make the basemap grey
-      "raster-saturation": -1,       // -1 = fully desaturated
-      "raster-contrast": 0.1,        // small contrast boost (optional)
-      "raster-brightness-min": 0.9,  // lighten a bit (optional)
-      "raster-brightness-max": 1.1
-    }
-  }]
-};
-
+      source: "osm"
+      // we’ll grey it out after 'load' with setPaintProperty
+    }]
+  };
 
   const map = new maplibregl.Map({
     container:"mapCanvas",
@@ -48,14 +43,15 @@ const style = {
     maxZoom: 20
   });
 
+  // controls (zoom +/- + rotate; we only use the zoom buttons visually)
   map.addControl(new maplibregl.NavigationControl(), "top-right");
-  map.addControl(new maplibregl.FullscreenControl(), "top-right");
   map.addControl(new maplibregl.GeolocateControl({
     positionOptions:{ enableHighAccuracy:true },
     trackUserLocation:true,
     showUserHeading:true
   }), "top-right");
 
+  // custom reset view button (your "lowest zoom")
   class ResetViewControl {
     onAdd(map){
       this._map = map;
@@ -107,7 +103,13 @@ const style = {
 
   map.on("load", async ()=>{
 
-    // icon
+    // *** make OSM basemap grey ***
+    map.setPaintProperty("osm", "raster-saturation", -1);      // full greyscale
+    map.setPaintProperty("osm", "raster-contrast", 0.1);       // small contrast bump
+    map.setPaintProperty("osm", "raster-brightness-min", 0.9); // slightly lighter
+    map.setPaintProperty("osm", "raster-brightness-max", 1.1);
+
+    // tree bubble icon
     const ICON=64, c=document.createElement("canvas");
     c.width=c.height=ICON; const ctx=c.getContext("2d");
     ctx.beginPath(); ctx.arc(ICON*0.5, ICON*0.40, ICON*0.28, 0, Math.PI*2);
@@ -118,10 +120,12 @@ const style = {
     ctx.fillStyle="rgba(0,0,0,.20)"; ctx.fill();
     map.addImage("tree-icon", ctx.getImageData(0,0,ICON,ICON), {pixelRatio:2});
 
+    // PMTiles source
     const archive = new pmtiles.PMTiles(PMTILES_URL);
     protocol.add(archive);
     map.addSource("areas", { type:"vector", url:`pmtiles://${PMTILES_URL}` });
 
+    // symbol points
     map.addLayer({
       id:"areas-symbol",
       type:"symbol",
@@ -144,6 +148,7 @@ const style = {
       }
     });
 
+    // green polygons (stay coloured)
     map.addLayer({
       id:"areas-fill",
       type:"fill",
@@ -165,7 +170,7 @@ const style = {
       paint:{ "line-color":"#052e16", "line-width":1.2 }
     });
 
-    // selected highlight (use literal yellow)
+    // yellow highlight outline
     map.addLayer({
       id: "areas-selected",
       type: "line",
