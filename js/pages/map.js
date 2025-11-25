@@ -1,3 +1,4 @@
+
 import { setKPI, parseNum } from "../utils/kpi.js";
 import { setupSidebarHandle } from "../utils/sidebar.js";
 import { setupShareButtons, currentUrlWithParams } from "../utils/share.js";
@@ -59,7 +60,6 @@ export function initMapPage({ openPage }) {
     showUserHeading: true
   }), "top-right");
 
-
   class ResetViewControl {
     onAdd(map) {
       this._map = map;
@@ -91,7 +91,7 @@ export function initMapPage({ openPage }) {
   const hero          = document.getElementById("hero");
   const siteImage     = document.getElementById("siteImage");
 
-  let lastCenterLL       = null;
+  let lastCenterLL        = null;
   let selectedFeatureName = null;
 
   setupShareButtons(() => {
@@ -110,34 +110,10 @@ export function initMapPage({ openPage }) {
 
     const archive = new pmtiles.PMTiles(PMTILES_URL);
     protocol.add(archive);
-    map.addSource("areas", { type: "vector", url: `pmtiles://${PMTILES_URL}` });
 
-    map.addLayer({
-      id: "areas-fill",
-      type: "fill",
-      source: "areas",
-      "source-layer": SOURCE_LAYER,
-      minzoom: 11,
-      paint: {
-        "fill-color": "#22c55e",
-        "fill-opacity": [
-          "interpolate", ["linear"], ["zoom"],
-          11, 0.25,
-          13, 0.45
-        ]
-      }
-    });
-
-    map.addLayer({
-      id: "areas-outline",
-      type: "line",
-      source: "areas",
-      "source-layer": SOURCE_LAYER,
-      minzoom: 11,
-      paint: {
-        "line-color": "#052e16",
-        "line-width": 1.2
-      }
+    map.addSource("areas", {
+      type: "vector",
+      url: `pmtiles://${PMTILES_URL}`
     });
 
     map.addSource("selected-area", {
@@ -148,6 +124,33 @@ export function initMapPage({ openPage }) {
       }
     });
 
+
+ map.addLayer({
+  id: "areas-fill",
+  type: "fill",
+  source: "areas",
+  "source-layer": SOURCE_LAYER,
+  minzoom: 11,
+  paint: {
+    "fill-color": "#f6e5e3",
+    "fill-opacity": 0.35    // << more transparent
+  }
+});
+
+map.addLayer({
+  id: "areas-outline",
+  type: "line",
+  source: "areas",
+  "source-layer": SOURCE_LAYER,
+  minzoom: 11,
+  paint: {
+    "line-color": "#d26a6a",
+    "line-width": 1.4,
+    "line-opacity": 0.9      // << slightly softer like screenshot
+  }
+});
+
+
     map.addLayer({
       id: "areas-selected",
       type: "line",
@@ -155,12 +158,12 @@ export function initMapPage({ openPage }) {
       minzoom: 11,
       paint: {
         "line-color": "#fbbc04",
-        "line-width": 3.5
+        "line-width": 4
       }
     });
 
     const img = new Image();
-    img.src = "./svg/ic-treesl.svg"; 
+    img.src = "./svg/ic-treesl.svg";  
     img.onload = () => {
       const SIZE = 64;
       const canvas = document.createElement("canvas");
@@ -168,8 +171,8 @@ export function initMapPage({ openPage }) {
       const ctx = canvas.getContext("2d");
       ctx.clearRect(0, 0, SIZE, SIZE);
       ctx.drawImage(img, 0, 0, SIZE, SIZE);
-      const imageData = ctx.getImageData(0, 0, SIZE, SIZE);
 
+      const imageData = ctx.getImageData(0, 0, SIZE, SIZE);
       map.addImage("tree-icon", imageData, { pixelRatio: 2 });
 
       map.addLayer({
@@ -198,17 +201,6 @@ export function initMapPage({ openPage }) {
       console.error("Failed to load ./svg/ic-treesl.svg for map icon", err);
     };
 
-    function highlightFeatureGeometry(f) {
-      const src = map.getSource("selected-area");
-      if (!src) return;
-
-      src.setData({
-        type: "Feature",
-        geometry: f.geometry,
-        properties: {}
-      });
-    }
-
     function handleClick(e) {
       const f =
         (e.features && e.features[0]) ||
@@ -220,8 +212,6 @@ export function initMapPage({ openPage }) {
 
       const p = f.properties || {};
       selectedFeatureName = p.name ?? null;
-
-      highlightFeatureGeometry(f);
 
       if (openPage) openPage("mapPage");
 
@@ -256,6 +246,34 @@ export function initMapPage({ openPage }) {
         "€"
       );
 
+      try {
+        const src = map.getSource("selected-area");
+
+        if (
+          src &&
+          f.geometry &&
+          (f.geometry.type === "Polygon" || f.geometry.type === "MultiPolygon")
+        ) {
+          const highlightFeature = {
+            type: "Feature",
+            geometry: f.geometry,
+            properties: {}
+          };
+
+          src.setData({
+            type: "FeatureCollection",
+            features: [highlightFeature]
+          });
+        } else if (src) {
+          src.setData({
+            type: "FeatureCollection",
+            features: []
+          });
+        }
+      } catch (err) {
+        console.error("Error updating selected-area highlight", err);
+      }
+
       let center = null;
       try {
         if (f.geometry?.type === "Polygon") {
@@ -272,7 +290,6 @@ export function initMapPage({ openPage }) {
           center = f.geometry.coordinates;
         }
       } catch {
-    
       }
 
       if (!center) {
