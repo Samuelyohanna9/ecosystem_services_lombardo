@@ -1,4 +1,3 @@
-
 import { setKPI, parseNum } from "../utils/kpi.js";
 import { setupSidebarHandle } from "../utils/sidebar.js";
 import { setupShareButtons, currentUrlWithParams } from "../utils/share.js";
@@ -164,6 +163,8 @@ export function initMapPage({ openPage }) {
 
     const archive = new pmtiles.PMTiles(PMTILES_URL);
     protocol.add(archive);
+
+    const IMAGE_BASE_URL = "https://pub-df9eaf452da44f0ea2cbbcb1a6cd55ac.r2.dev/images/";
 
     map.addSource("areas", {
       type: "vector",
@@ -396,7 +397,6 @@ export function initMapPage({ openPage }) {
         if (elDiameter) elDiameter.textContent = p.diametro_tronco || "—";  
         if (elCode)     elCode.textContent     = f.id ?? p.codice ?? "—";
 
-      
         setKPI("kpiTrees", 1);
 
         const eco = getEcoYearRecord(p.ecosystem_yearly);
@@ -473,7 +473,14 @@ export function initMapPage({ openPage }) {
         const heroImg = String(heroImgRaw).trim();
         console.log("Polygon hero image:", heroImg); 
         if (heroImg !== "") {
-          siteImage.src = heroImg;
+            let finalSrc = heroImg;
+            
+          
+            if (!heroImg.startsWith("http")) { 
+                finalSrc = IMAGE_BASE_URL + heroImg;
+            }
+          
+          siteImage.src = finalSrc; 
           siteImage.alt = featureTitle;
           siteImage.style.display = "block";
           hero.style.background = "#000";
