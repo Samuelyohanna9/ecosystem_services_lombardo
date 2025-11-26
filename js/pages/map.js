@@ -588,7 +588,7 @@ export function initMapPage({ openPage }) {
           center = f.geometry.coordinates;
         }
       } catch {
-        // ignore
+        
       }
 
       if (!center) {
