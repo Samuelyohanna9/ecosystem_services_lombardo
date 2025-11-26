@@ -124,7 +124,11 @@ nav a.active{color:var(--green); border-bottom-color:var(--green);}
   background:#000;
   min-height:180px;
 }
-.hero img{display:block;width:100%;height:auto;}
+.hero img{
+  display:block;
+  width:100%;
+  height:auto;
+}
 .hero-overlay{
   position:absolute; inset:0; z-index:3;
   pointer-events:none;
@@ -148,6 +152,23 @@ nav a.active{color:var(--green); border-bottom-color:var(--green);}
 .hero-left{position:absolute;left:10px;top:10px;}
 .hero-right{position:absolute;right:10px;top:10px;display:flex;gap:10px;}
 
+/* >>> TREE MODE HERO – tiny circular leaf icon (ulmus_minor.svg) <<< */
+/* Only applies if you add the class "tree-mode" to #hero in JS */
+.hero.tree-mode{
+  min-height:80px;
+  background:#fff;
+}
+.hero.tree-mode img{
+  width:26px;          /* really small circle */
+  height:26px;
+  margin:14px auto 8px;
+  border-radius:50%;
+  border:1px solid var(--panel-border);
+  padding:4px;
+  background:#f3f4f6;
+  object-fit:contain;
+}
+
 /* title row + directions */
 .content{padding:2px 12px 0;}
 .title-row{display:flex;align-items:center;gap:10px;}
@@ -156,6 +177,16 @@ nav a.active{color:var(--green); border-bottom-color:var(--green);}
   font-size:20px;font-weight:800;margin:0;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
+
+/* subtitle: scientific name for trees */
+.sb-subtitle{
+  margin:2px 0 0;
+  font-size:13px;
+  color:var(--muted);
+  font-style:italic;
+}
+
+/* directions button */
 .dir-btn{
   width:50px;height:50px;background:var(--green);
   border:none;border-radius:50%;cursor:pointer;
@@ -178,16 +209,104 @@ nav a.active{color:var(--green); border-bottom-color:var(--green);}
 }
 .dir-btn:hover .dir-tip{opacity:1;transform:none;}
 
+/* ========= TREE DETAILS BLOCK ========= */
+.tree-details{
+  padding:14px 12px 8px;
+  border-top:1px solid var(--panel-border);
+  margin-top:8px;
+}
+
+/* Leaf icon next to "Tree" label */
+.tree-header{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:8px;
+}
+
+.tree-icon{
+  width:24px;          /* smaller circle */
+  height:24px;
+  border-radius:50%;
+  background:#f3f4f6;
+  border:1px solid var(--panel-border);
+  display:grid;
+  place-items:center;
+  flex:0 0 auto;
+}
+.tree-icon img{
+  width:14px;          /* tiny tree */
+  height:14px;
+  object-fit:contain;
+}
+
+/* Area name block */
+.tree-area-block{
+  margin-bottom:12px;
+}
+.tree-area-block .label{
+  font-size:12px;
+  font-weight:800;
+  color:#111827;
+  margin-bottom:2px;
+}
+.tree-area-block .value{
+  font-size:14px;
+  color:#374151;
+}
+
+
+.tree-meta-grid{
+  display:grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap:10px;
+}
+.tree-meta-grid .meta{
+  text-align:left;
+}
+.tree-meta-grid .label{
+  font-size:12px;
+  font-weight:800;
+  color:#111827;
+}
+.tree-meta-grid .value{
+  font-size:14px;
+  color:#374151;
+  margin-top:2px;
+}
+.tree-meta-grid .unit{
+  font-size:12px;
+  color:#6b7280;
+}
+
+
+@media (max-width:480px){
+  .tree-meta-grid{
+    gap:16px;
+  }
+  .tree-meta-grid .meta{
+    flex:1 1 45%;
+  }
+}
+
 /* KPIs */
-.kpis{display:flex;justify-content:space-between;gap:8px;
-  padding:10px 12px 16px;flex-wrap:nowrap;overflow:visible;position:relative;}
-.kpi{flex:1 1 0;min-width:0;padding:6px 2px;display:flex;flex-direction:column;
-  align-items:center;text-align:center;gap:6px;position:relative;}
-.kpi .icon{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;
-  background:#fff;border:1px solid var(--panel-border);}
+.kpis{
+  display:flex;justify-content:space-between;gap:8px;
+  padding:10px 12px 16px;flex-wrap:nowrap;overflow:visible;position:relative;
+}
+.kpi{
+  flex:1 1 0;min-width:0;padding:6px 2px;display:flex;flex-direction:column;
+  align-items:center;text-align:center;gap:6px;position:relative;
+}
+.kpi .icon{
+  width:52px;height:52px;border-radius:50%;display:grid;place-items:center;
+  background:#fff;border:1px solid var(--panel-border);
+}
 .kpi .icon img{width:30px;height:30px;}
-.kpi .value-row{display:flex;align-items:center;gap:4px;font-weight:800;font-size:14px;
-  line-height:1.1;min-height:16px;position:relative;z-index:1;}
+.kpi .value-row{
+  display:flex;align-items:center;gap:4px;font-weight:800;font-size:14px;
+  line-height:1.1;min-height:16px;position:relative;z-index:1;
+}
 .info-btn{
   width:8px;height:8px;border-radius:50%;border:1px solid #d1d5db;background:#f3f4f6;
   display:grid;place-items:center;font-size:8px;font-weight:800;color:#6b7280;
@@ -218,18 +337,28 @@ footer{
   padding:8px 12px 10px;display:flex;flex-direction:column;
   align-items:center;gap:6px;font-size:12px;color:#9ca3af;text-align:center;
 }
-.footer-text{display:flex;flex-wrap:wrap;justify-content:center;align-items:baseline;
-  gap:6px;line-height:1.2;}
-.r3gis-link{text-decoration:none;font-weight:900;letter-spacing:.2px;color:#111827;
-  display:inline-flex;align-items:baseline;}
+.footer-text{
+  display:flex;flex-wrap:wrap;justify-content:center;align-items:baseline;
+  gap:6px;line-height:1.2;
+}
+.r3gis-link{
+  text-decoration:none;font-weight:900;letter-spacing:.2px;color:#111827;
+  display:inline-flex;align-items:baseline;
+}
 .r3gis-link .r{color:var(--r3gis-orange);}
-.footer-icons{display:flex;align-items:center;justify-content:center;gap:10px;}
-.footer-icons a{display:grid;place-items:center;width:26px;height:26px;opacity:.75;
-  transition:opacity .12s ease,transform .12s ease;}
+.footer-icons{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+}
+.footer-icons a{
+  display:grid;place-items:center;width:26px;height:26px;opacity:.75;
+  transition:opacity .12s ease,transform .12s ease;
+}
 .footer-icons a:hover{opacity:1;transform:translateY(-1px);}
 .footer-icons img{width:22px;height:22px;display:block;}
-.x-pill{width:22px;height:22px;border-radius:50%;background:#11182710;display:grid;
-  place-items:center;font-weight:900;font-size:12px;color:#111827;line-height:1;}
+.x-pill{
+  width:22px;height:22px;border-radius:50%;background:#11182710;display:grid;
+  place-items:center;font-weight:900;font-size:12px;color:#111827;line-height:1;
+}
 
 /* maplibre controls */
 .maplibregl-ctrl-group{
@@ -250,8 +379,10 @@ footer{
   background:#69AB3D;width:36px;height:36px;border-radius:8px;border:2px solid #d8ead0;
   display:grid;place-items:center;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.18);
 }
-.reset-ctrl svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2;
-  stroke-linecap:round;stroke-linejoin:round;}
+.reset-ctrl svg{
+  width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round;
+}
 
 .placeholder{
   height:100%;display:grid;place-items:center;color:#fff;font-size:18px;background:var(--bg);

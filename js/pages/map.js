@@ -1,4 +1,4 @@
-
+// js/pages/map.js
 import { setKPI, parseNum } from "../utils/kpi.js";
 import { setupSidebarHandle } from "../utils/sidebar.js";
 import { setupShareButtons, currentUrlWithParams } from "../utils/share.js";
@@ -91,6 +91,14 @@ export function initMapPage({ openPage }) {
   const hero          = document.getElementById("hero");
   const siteImage     = document.getElementById("siteImage");
 
+  // tree-specific DOM references
+  const treeDetails  = document.getElementById("treeDetails");
+  const sbSubtitle   = document.getElementById("sbSubtitle");
+  const elAreaName   = document.getElementById("treeAreaName");
+  const elHeight     = document.getElementById("treeHeight");
+  const elDiameter   = document.getElementById("treeDiameter");
+  const elCode       = document.getElementById("treeCode");
+
   let lastCenterLL        = null;
   let selectedFeatureName = null;
 
@@ -106,6 +114,52 @@ export function initMapPage({ openPage }) {
     return { title, url };
   });
 
+  // ---------- Helpers for nested data ----------
+
+  function safeParseJSON(maybeJSON) {
+    if (typeof maybeJSON !== "string") return maybeJSON;
+    try {
+      return JSON.parse(maybeJSON);
+    } catch {
+      return null;
+    }
+  }
+
+  // ecosystem_yearly can be an array or an object of objects – take the first
+  function getEcoYearRecord(rawEco) {
+    if (!rawEco) return null;
+    let v = safeParseJSON(rawEco);
+    if (!v) return null;
+
+    if (Array.isArray(v)) {
+      return v[0] || null;
+    }
+    if (typeof v === "object") {
+      const vals = Object.values(v);
+      return vals[0] || null;
+    }
+    return null;
+  }
+
+  // trees is feature.properties.trees (array of { genere, specie, diametro, numerosita })
+  function getTreesCount(rawTrees, fallbackCount) {
+    // if the flat numeric property is valid, prefer it
+    if (typeof fallbackCount === "number" && !Number.isNaN(fallbackCount)) {
+      return fallbackCount;
+    }
+    if (!rawTrees) return null;
+
+    const v = safeParseJSON(rawTrees);
+    if (!Array.isArray(v)) return null;
+
+    let sum = 0;
+    for (const t of v) {
+      const n = parseNum(t?.numerosita);
+      if (Number.isFinite(n)) sum += n;
+    }
+    return sum || null;
+  }
+
   map.on("load", async () => {
 
     const archive = new pmtiles.PMTiles(PMTILES_URL);
@@ -116,6 +170,7 @@ export function initMapPage({ openPage }) {
       url: `pmtiles://${PMTILES_URL}`
     });
 
+    // polygon highlight
     map.addSource("selected-area", {
       type: "geojson",
       data: {
@@ -124,32 +179,40 @@ export function initMapPage({ openPage }) {
       }
     });
 
+    // tree highlight (single point)
+    map.addSource("selected-tree", {
+      type: "geojson",
+      data: {
+        type: "FeatureCollection",
+        features: []
+      }
+    });
 
- map.addLayer({
-  id: "areas-fill",
-  type: "fill",
-  source: "areas",
-  "source-layer": SOURCE_LAYER,
-  minzoom: 11,
-  paint: {
-    "fill-color": "#f6e5e3",
-    "fill-opacity": 0.35    // << more transparent
-  }
-});
+    // === AREAS (polygons) ===
+    map.addLayer({
+      id: "areas-fill",
+      type: "fill",
+      source: "areas",
+      "source-layer": SOURCE_LAYER,
+      minzoom: 11,
+      paint: {
+        "fill-color": "#f6e5e3",
+        "fill-opacity": 0.35
+      }
+    });
 
-map.addLayer({
-  id: "areas-outline",
-  type: "line",
-  source: "areas",
-  "source-layer": SOURCE_LAYER,
-  minzoom: 11,
-  paint: {
-    "line-color": "#d26a6a",
-    "line-width": 1.4,
-    "line-opacity": 0.9      // << slightly softer like screenshot
-  }
-});
-
+    map.addLayer({
+      id: "areas-outline",
+      type: "line",
+      source: "areas",
+      "source-layer": SOURCE_LAYER,
+      minzoom: 11,
+      paint: {
+        "line-color": "#d26a6a",
+        "line-width": 1.4,
+        "line-opacity": 0.9
+      }
+    });
 
     map.addLayer({
       id: "areas-selected",
@@ -162,8 +225,51 @@ map.addLayer({
       }
     });
 
+    // === TREES POINTS LAYER (green dots, all zooms) ===
+    map.addLayer({
+      id: "trees-points",
+      type: "circle",
+      source: "areas",
+      "source-layer": SOURCE_LAYER,
+      minzoom: 0, // show at every zoom level
+      filter: ["==", ["get", "element_type"], "tree"],
+      paint: {
+        "circle-radius": [
+          "interpolate", ["linear"], ["zoom"],
+          4, 1.4,
+          10, 3.5,
+          18, 7
+        ],
+        "circle-color": "#22c55e",        // bright green
+        "circle-stroke-color": "#064e3b", // dark green border
+        "circle-stroke-width": 0.8,
+        "circle-opacity": 0.9
+      }
+    });
+
+    // yellow halo for the selected tree
+    map.addLayer({
+      id: "tree-selected",
+      type: "circle",
+      source: "selected-tree",
+      minzoom: 0,
+      paint: {
+        "circle-radius": [
+          "interpolate", ["linear"], ["zoom"],
+          4, 3.5,
+          10, 6,
+          18, 10
+        ],
+        "circle-color": "#facc15",
+        "circle-opacity": 0.3,
+        "circle-stroke-color": "#f59e0b",
+        "circle-stroke-width": 2
+      }
+    });
+
+    // === LOW-ZOOM AREA ICONS (unchanged) ===
     const img = new Image();
-    img.src = "./svg/ic-treesl.svg";  
+    img.src = "./svg/ic-treesl.svg";
     img.onload = () => {
       const SIZE = 64;
       const canvas = document.createElement("canvas");
@@ -202,24 +308,126 @@ map.addLayer({
     };
 
     function handleClick(e) {
+      // consider tree points first so clicking them wins over polygons
       const f =
         (e.features && e.features[0]) ||
         map.queryRenderedFeatures(e.point, {
-          layers: ["areas-fill", "areas-outline", "areas-symbol"]
+          layers: ["trees-points", "areas-fill", "areas-outline", "areas-symbol"]
         })[0];
 
       if (!f) return;
 
       const p = f.properties || {};
-      selectedFeatureName = p.name ?? null;
+      const isTree =
+        p.element_type === "tree" && f.geometry && f.geometry.type === "Point";
 
       if (openPage) openPage("mapPage");
 
-      document.getElementById("sbTitle").textContent = p.name || "Green Area";
+      // open sidebar always
+      sidebar.classList.add("open");
+      positionHandle();
 
+      // ========== TREE FEATURE ==========
+      if (isTree) {
+        const commonName = p.nome_comune || "Tree";
+        const sciName    = p.nome_scientifico || "";
+
+        selectedFeatureName = commonName;
+
+        // Title + subtitle
+        document.getElementById("sbTitle").textContent = commonName;
+        if (sbSubtitle) sbSubtitle.textContent = sciName;
+
+        // Show tree details block
+        if (treeDetails) treeDetails.style.display = "block";
+
+        // Hero: use ulmus_minor.svg as tree image
+        siteImage.src = "./svg/ulmus_minor.svg";
+        siteImage.alt = sciName || commonName;
+        siteImage.style.display = "block";
+        hero.style.background = "#ffffff";
+
+        // Fill tree details
+        if (elAreaName) elAreaName.textContent = p.nome_area || "—";
+        if (elHeight)   elHeight.textContent   = p.altezza || "—";          // unit "m" comes from HTML
+        if (elDiameter) elDiameter.textContent = p.diametro_tronco || "—";  // unit "cm" from HTML
+        if (elCode)     elCode.textContent     = f.id ?? p.codice ?? "—";
+
+        // KPIs for a single tree
+        setKPI("kpiTrees", 1);
+
+        const eco = getEcoYearRecord(p.ecosystem_yearly);
+        const co2kg = eco ? parseNum(eco.co2_absorption_kg) : null;
+        const co2t  = Number.isFinite(co2kg) ? co2kg / 1000 : null;
+        setKPI("kpiCO2Seq", co2t, "t");
+
+        const pm10g = eco ? parseNum(eco.pm10_capture_g) : null;
+        setKPI("kpiPM", pm10g, "g");
+
+        const rainL = eco ? parseNum(eco.h2o_retention_l) : null;
+        setKPI("kpiRain", rainL, "L");
+
+        const econVal = parseNum(p.economic_value_eur);
+        setKPI("kpiEur", econVal, "€");
+
+        // highlight tree, clear polygon highlight
+        try {
+          const treeSrc = map.getSource("selected-tree");
+          const areaSrc = map.getSource("selected-area");
+
+          if (treeSrc) {
+            treeSrc.setData({
+              type: "FeatureCollection",
+              features: [{
+                type: "Feature",
+                geometry: f.geometry,
+                properties: {}
+              }]
+            });
+          }
+          if (areaSrc) {
+            areaSrc.setData({
+              type: "FeatureCollection",
+              features: []
+            });
+          }
+        } catch (err) {
+          console.error("Error updating tree highlight", err);
+        }
+
+        // Center on tree
+        let center = null;
+        if (f.geometry?.type === "Point") {
+          center = f.geometry.coordinates;
+        }
+        if (!center) {
+          center = map.unproject(e.point).toArray();
+        }
+        lastCenterLL = center;
+
+        btnDirections.disabled = false;
+        return; // done for tree
+      }
+
+      // ========== AREA / POLYGON FEATURE ==========
+      const featureTitle =
+        p.nome ||
+        p.description ||
+        p.name ||
+        (typeof p.id !== "undefined" ? `Area ${p.id}` : "Green Area");
+
+      selectedFeatureName = featureTitle;
+
+      document.getElementById("sbTitle").textContent = featureTitle;
+      if (sbSubtitle) sbSubtitle.textContent = "";
+
+      // hide tree details when we’re on an area
+      if (treeDetails) treeDetails.style.display = "none";
+
+      // Hero image (if you ever add URL back)
       if (p.url && String(p.url).trim() !== "") {
         siteImage.src = p.url;
-        siteImage.alt = p.name || "Green area image";
+        siteImage.alt = featureTitle;
         siteImage.style.display = "block";
         hero.style.background = "#000";
       } else {
@@ -228,44 +436,74 @@ map.addLayer({
         hero.style.background = "#111827";
       }
 
-      setKPI("kpiTrees",  p.number_of_plants ?? p.trees_count ?? p.n_trees);
-      setKPI("kpiCO2Seq", p.co2_sequestered_kg ?? p.co2_absorption_kg, "t");
+      // 1) Trees in area – from trees[] numerosity or fallback number_of_plant
+      const directTreeCount = parseNum(p.number_of_plant);
+      let treesTotal = getTreesCount(p.trees, directTreeCount);
 
-      const pm10 = parseNum(p.pm10_capture_g);
-      const pm25 = parseNum(p.pm25_capture_g);
-      const pmTot = (isFinite(pm10) ? pm10 : 0) + (isFinite(pm25) ? pm25 : 0);
-      setKPI("kpiPM", pmTot, "g");
+      // EXTRA FALLBACK: count tree points with same nome_area
+      if (!Number.isFinite(treesTotal) && p.nome) {
+        try {
+          const treeFeatures = map.querySourceFeatures("areas", {
+            sourceLayer: SOURCE_LAYER,
+            filter: [
+              "all",
+              ["==", ["get", "element_type"], "tree"],
+              ["==", ["get", "nome_area"], p.nome]
+            ]
+          });
+          if (treeFeatures && treeFeatures.length) {
+            treesTotal = treeFeatures.length;
+          }
+        } catch (err) {
+          console.error("Error counting trees from points", err);
+        }
+      }
 
-      setKPI("kpiRain", p.h2o_precipitation_l ?? p.h2o_retention_l, "L");
+      setKPI("kpiTrees", treesTotal);
 
-      setKPI(
-        "kpiEur",
-        p.co2_absorption_value_eur ??
-        p.co2_stock_value_eur ??
-        p.energy_value_eur,
-        "€"
-      );
+      // 2) Ecosystem yearly record (CO2, PM10, Rain)
+      const eco = getEcoYearRecord(p.ecosystem_yearly);
 
+      const co2kg = eco ? parseNum(eco.co2_absorption_kg) : null;
+      const co2t  = Number.isFinite(co2kg) ? co2kg / 1000 : null;
+      setKPI("kpiCO2Seq", co2t, "t");
+
+      const pm10g = eco ? parseNum(eco.pm10_capture_g) : null;
+      setKPI("kpiPM", pm10g, "g");
+
+      const rainL = eco ? parseNum(eco.h2o_retention_l) : null;
+      setKPI("kpiRain", rainL, "L");
+
+      const econVal = parseNum(p.economic_value_eur);
+      setKPI("kpiEur", econVal, "€");
+
+      // polygon highlight, clear tree highlight
       try {
-        const src = map.getSource("selected-area");
+        const areaSrc = map.getSource("selected-area");
+        const treeSrc = map.getSource("selected-tree");
 
         if (
-          src &&
+          areaSrc &&
           f.geometry &&
           (f.geometry.type === "Polygon" || f.geometry.type === "MultiPolygon")
         ) {
-          const highlightFeature = {
-            type: "Feature",
-            geometry: f.geometry,
-            properties: {}
-          };
-
-          src.setData({
+          areaSrc.setData({
             type: "FeatureCollection",
-            features: [highlightFeature]
+            features: [{
+              type: "Feature",
+              geometry: f.geometry,
+              properties: {}
+            }]
           });
-        } else if (src) {
-          src.setData({
+        } else if (areaSrc) {
+          areaSrc.setData({
+            type: "FeatureCollection",
+            features: []
+          });
+        }
+
+        if (treeSrc) {
+          treeSrc.setData({
             type: "FeatureCollection",
             features: []
           });
@@ -274,6 +512,7 @@ map.addLayer({
         console.error("Error updating selected-area highlight", err);
       }
 
+      // Center for directions
       let center = null;
       try {
         if (f.geometry?.type === "Polygon") {
@@ -290,6 +529,7 @@ map.addLayer({
           center = f.geometry.coordinates;
         }
       } catch {
+        // ignore
       }
 
       if (!center) {
@@ -297,15 +537,13 @@ map.addLayer({
       }
 
       lastCenterLL = center;
-
       btnDirections.disabled = false;
-      sidebar.classList.add("open");
-      positionHandle();
     }
 
     map.on("click", "areas-fill",    handleClick);
     map.on("click", "areas-outline", handleClick);
     map.on("click", "areas-symbol",  handleClick);
+    map.on("click", "trees-points",  handleClick);
     map.on("click", handleClick);
 
     positionHandle();
