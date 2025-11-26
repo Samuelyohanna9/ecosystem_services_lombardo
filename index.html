@@ -19,14 +19,27 @@
 
 <div id="app">
 
-  <!-- ONLY MAP PAGE -->
   <section id="mapPage" class="page active">
 
     <aside id="sidebar">
 
-      <!-- HERO -->
+     
       <div id="hero" class="hero">
-        <img id="siteImage" src="" alt="Green area image" style="display:none;">
+
+       
+        <img
+          id="siteImage"
+          src=""
+          alt="Green area image"
+          style="
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+          "
+          loading="eager"
+        >
+
         <div class="hero-overlay">
           <button class="hero-btn hero-left" id="btnClose" title="Back">
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -43,13 +56,11 @@
         </div>
       </div>
 
-      <!-- TITLE + DIRECTIONS -->
+      
       <div class="content">
         <div class="title-row">
           <div class="title-wrap">
-            <!-- main title: area name OR tree common name -->
             <h1 class="sb-title" id="sbTitle">Green Area</h1>
-            <!-- subtitle: used for tree scientific name -->
             <p class="sb-subtitle" id="sbSubtitle"></p>
           </div>
 
@@ -59,15 +70,8 @@
           </button>
         </div>
 
-        <!-- TREE DETAILS (shown only when a single tree is clicked) -->
+       
         <div id="treeDetails" class="tree-details" style="display:none;">
-
-          <div class="tree-header">
-            <div class="tree-icon">
-              <!-- your leaf icon (small) -->
-              <img src="./svg/ic-leaf.svg" alt="Tree" width="18" height="18">
-            </div>
-          </div>
 
           <div class="tree-area-block">
             <div class="label">Area name</div>
@@ -79,12 +83,14 @@
               <div class="label">Tree code</div>
               <div class="value" id="treeCode">—</div>
             </div>
+
             <div class="meta">
               <div class="label">Height</div>
               <div class="value">
                 <span id="treeHeight">—</span> <span class="unit">m</span>
               </div>
             </div>
+
             <div class="meta">
               <div class="label">Trunk diameter</div>
               <div class="value">
@@ -93,101 +99,57 @@
             </div>
           </div>
         </div>
-        <!-- END TREE DETAILS -->
-
       </div>
 
-      <!-- KPIs (unchanged) -->
+      
       <div class="kpis">
         <div class="kpi" data-pos="left">
-          <div class="icon"><img src="./svg/ic-trees.svg" alt=""></div>
+          <div class="icon"><img src="./svg/ic-trees.svg"></div>
           <div class="value-row">
             <div id="kpiTrees">—</div>
-            <div class="info-btn">i
-              <div class="info-tip">Trees found inside the selected green area.</div>
-            </div>
           </div>
           <div class="t">alberi nell'area</div>
         </div>
 
         <div class="kpi">
-          <div class="icon"><img src="./svg/ic-co2.svg" alt=""></div>
-          <div class="value-row">
-            <div id="kpiCO2Seq">—</div>
-            <div class="info-btn">i
-              <div class="info-tip">Amount of carbon dioxide (CO₂) sequestered each year.</div>
-            </div>
-          </div>
-          <div class="t">Co2 rimossi<br><em>per anno</em></div>
+          <div class="icon"><img src="./svg/ic-co2.svg"></div>
+          <div class="value-row"><div id="kpiCO2Seq">—</div></div>
+          <div class="t">Co2 rimossi</div>
         </div>
 
         <div class="kpi">
-          <div class="icon"><img src="./svg/ic-pm.svg" alt=""></div>
-          <div class="value-row">
-            <div id="kpiPM">—</div>
-            <div class="info-btn">i
-              <div class="info-tip">Amount of pollutants (PM, O₃, NOₓ, SO₂) removed each year.</div>
-            </div>
-          </div>
-          <div class="t">PM assorbito<br>per anno</div>
+          <div class="icon"><img src="./svg/ic-pm.svg"></div>
+          <div class="value-row"><div id="kpiPM">—</div></div>
+          <div class="t">PM assorbito</div>
         </div>
 
         <div class="kpi">
-          <div class="icon"><img src="./svg/ic-save-energy.svg" alt=""></div>
-          <div class="value-row">
-            <div id="kpiRain">—</div>
-            <div class="info-btn">i
-              <div class="info-tip">Amount of rainfall intercepted per year.</div>
-            </div>
-          </div>
-          <div class="t">Pioggia<br>intercettata</div>
+          <div class="icon"><img src="./svg/ic-save-energy.svg"></div>
+          <div class="value-row"><div id="kpiRain">—</div></div>
+          <div class="t">Pioggia</div>
         </div>
 
-        <div class="kpi" data-pos="right">
-          <div class="icon"><img src="./svg/ic-economic-value.svg" alt=""></div>
-          <div class="value-row">
-            <div id="kpiEur">—</div>
-            <div class="info-btn">i
-              <div class="info-tip">Economic value of ecosystem services provided by plants each year.</div>
-            </div>
-          </div>
-          <div class="t">Valore <br>economico</div>
+        <div class="kpi">
+          <div class="icon"><img src="./svg/ic-economic-value.svg"></div>
+          <div class="value-row"><div id="kpiEur">—</div></div>
+          <div class="t">Valore</div>
         </div>
       </div>
 
     </aside>
 
-    <button id="sidebarHandle" class="sidebar-handle" aria-label="Show sidebar">
-      <svg viewBox="0 0 24 24">
-        <path d="M9 6l6 6-6 6"></path>
-      </svg>
+    <button id="sidebarHandle" class="sidebar-handle">
+      <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"></path></svg>
     </button>
 
     <div id="mapCanvas"></div>
-
   </section>
 </div>
 
 <footer>
   <div class="footer-text">
     <span>All rights reserved © 2025 Regione Lombardia | Powered by</span>
-    <a class="r3gis-link" href="https://r3gis.com" target="_blank" rel="noopener">
-      <span class="r">R</span><span>3GIS</span>
-    </a>
-  </div>
-
-  <div class="footer-icons">
-    <a href="https://www.youtube.com/user/regionelombardia" target="_blank">
-      <img src="./svg/youtube.svg" alt="">
-    </a>
-
-    <a href="https://x.com/LombardiaOnLine" target="_blank">
-      <div class="x-pill">X</div>
-    </a>
-
-    <a href="https://www.facebook.com/Regione.Lombardia.official/" target="_blank">
-      <img src="./svg/btn-share-fb.svg" alt="">
-    </a>
+    <a class="r3gis-link" href="https://r3gis.com" target="_blank">R3GIS</a>
   </div>
 </footer>
 

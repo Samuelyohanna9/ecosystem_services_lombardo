@@ -188,13 +188,51 @@ export function initMapPage({ openPage }) {
       }
     });
 
-    // === AREAS (polygons) ===
+    // === AREAS (polygons) – TWO STYLES ===
+
+    // 1) NON-district polygons (e.g. Forestazione urbana) – green & transparent
     map.addLayer({
-      id: "areas-fill",
+      id: "areas-fill-other",
       type: "fill",
       source: "areas",
       "source-layer": SOURCE_LAYER,
       minzoom: 11,
+      filter: [
+        "all",
+        ["!=", ["get", "element_type"], "district"]
+      ],
+      paint: {
+        "fill-color": "#bbf7d0",  // light green
+        "fill-opacity": 0.3
+      }
+    });
+
+    // outline for non-district polygons
+    map.addLayer({
+      id: "areas-outline-other",
+      type: "line",
+      source: "areas",
+      "source-layer": SOURCE_LAYER,
+      minzoom: 11,
+      filter: [
+        "all",
+        ["!=", ["get", "element_type"], "district"]
+      ],
+      paint: {
+        "line-color": "#16a34a", // darker green
+        "line-width": 1.2,
+        "line-opacity": 0.8
+      }
+    });
+
+    // 2) district polygons – keep the “current style” (pinkish)
+    map.addLayer({
+      id: "areas-fill-district",
+      type: "fill",
+      source: "areas",
+      "source-layer": SOURCE_LAYER,
+      minzoom: 11,
+      filter: ["==", ["get", "element_type"], "district"],
       paint: {
         "fill-color": "#f6e5e3",
         "fill-opacity": 0.35
@@ -202,11 +240,12 @@ export function initMapPage({ openPage }) {
     });
 
     map.addLayer({
-      id: "areas-outline",
+      id: "areas-outline-district",
       type: "line",
       source: "areas",
       "source-layer": SOURCE_LAYER,
       minzoom: 11,
+      filter: ["==", ["get", "element_type"], "district"],
       paint: {
         "line-color": "#d26a6a",
         "line-width": 1.4,
@@ -214,6 +253,7 @@ export function initMapPage({ openPage }) {
       }
     });
 
+    // selected outline on top of everything
     map.addLayer({
       id: "areas-selected",
       type: "line",
@@ -312,7 +352,14 @@ export function initMapPage({ openPage }) {
       const f =
         (e.features && e.features[0]) ||
         map.queryRenderedFeatures(e.point, {
-          layers: ["trees-points", "areas-fill", "areas-outline", "areas-symbol"]
+          layers: [
+            "trees-points",
+            "areas-fill-district",
+            "areas-outline-district",
+            "areas-fill-other",
+            "areas-outline-other",
+            "areas-symbol"
+          ]
         })[0];
 
       if (!f) return;
@@ -424,12 +471,22 @@ export function initMapPage({ openPage }) {
       // hide tree details when we’re on an area
       if (treeDetails) treeDetails.style.display = "none";
 
-      // Hero image (if you ever add URL back)
-      if (p.url && String(p.url).trim() !== "") {
-        siteImage.src = p.url;
-        siteImage.alt = featureTitle;
-        siteImage.style.display = "block";
-        hero.style.background = "#000";
+      // --- HERO IMAGE FOR POLYGON ---
+      // use `image` if present, fall back to `url` / `image_url`
+      let heroImgRaw = p.image || p.url || p.image_url;
+      if (heroImgRaw != null) {
+        const heroImg = String(heroImgRaw).trim();
+        console.log("Polygon hero image:", heroImg); // debug in DevTools
+        if (heroImg !== "") {
+          siteImage.src = heroImg;
+          siteImage.alt = featureTitle;
+          siteImage.style.display = "block";
+          hero.style.background = "#000";
+        } else {
+          siteImage.src = "";
+          siteImage.style.display = "none";
+          hero.style.background = "#111827";
+        }
       } else {
         siteImage.src = "";
         siteImage.style.display = "none";
@@ -540,10 +597,13 @@ export function initMapPage({ openPage }) {
       btnDirections.disabled = false;
     }
 
-    map.on("click", "areas-fill",    handleClick);
-    map.on("click", "areas-outline", handleClick);
-    map.on("click", "areas-symbol",  handleClick);
-    map.on("click", "trees-points",  handleClick);
+    // updated layer IDs for click events
+    map.on("click", "areas-fill-district",    handleClick);
+    map.on("click", "areas-outline-district", handleClick);
+    map.on("click", "areas-fill-other",       handleClick);
+    map.on("click", "areas-outline-other",    handleClick);
+    map.on("click", "areas-symbol",           handleClick);
+    map.on("click", "trees-points",           handleClick);
     map.on("click", handleClick);
 
     positionHandle();
