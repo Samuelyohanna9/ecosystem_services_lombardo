@@ -152,8 +152,14 @@ nav a.active{color:var(--green); border-bottom-color:var(--green);}
 .hero-left{position:absolute;left:10px;top:10px;}
 .hero-right{position:absolute;right:10px;top:10px;display:flex;gap:10px;}
 
+/* >>> TREE MODE HERO – tiny circular leaf icon (ulmus_minor.svg) <<< */
+/* Only applies if you add the class "tree-mode" to #hero in JS */
+.hero.tree-mode{
+  min-height:80px;
+  background:#fff;
+}
 .hero.tree-mode img{
-  width:26px;          
+  width:26px;          /* really small circle */
   height:26px;
   margin:14px auto 8px;
   border-radius:50%;
@@ -163,6 +169,7 @@ nav a.active{color:var(--green); border-bottom-color:var(--green);}
   object-fit:contain;
 }
 
+/* title row + directions */
 .content{padding:2px 12px 0;}
 .title-row{display:flex;align-items:center;gap:10px;}
 .title-wrap{flex:1;min-width:0;}
@@ -171,6 +178,7 @@ nav a.active{color:var(--green); border-bottom-color:var(--green);}
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 
+/* subtitle: scientific name for trees */
 .sb-subtitle{
   margin:2px 0 0;
   font-size:13px;
@@ -178,6 +186,7 @@ nav a.active{color:var(--green); border-bottom-color:var(--green);}
   font-style:italic;
 }
 
+/* directions button */
 .dir-btn{
   width:50px;height:50px;background:var(--green);
   border:none;border-radius:50%;cursor:pointer;
@@ -200,13 +209,14 @@ nav a.active{color:var(--green); border-bottom-color:var(--green);}
 }
 .dir-btn:hover .dir-tip{opacity:1;transform:none;}
 
+/* ========= TREE DETAILS BLOCK ========= */
 .tree-details{
   padding:14px 12px 8px;
   border-top:1px solid var(--panel-border);
   margin-top:8px;
 }
 
-
+/* Leaf icon next to "Tree" label */
 .tree-header{
   display:flex;
   align-items:center;
@@ -215,7 +225,7 @@ nav a.active{color:var(--green); border-bottom-color:var(--green);}
 }
 
 .tree-icon{
-  width:24px;          
+  width:24px;          /* smaller circle */
   height:24px;
   border-radius:50%;
   background:#f3f4f6;
@@ -225,12 +235,12 @@ nav a.active{color:var(--green); border-bottom-color:var(--green);}
   flex:0 0 auto;
 }
 .tree-icon img{
-  width:14px;        
+  width:14px;          /* tiny tree */
   height:14px;
   object-fit:contain;
 }
 
-
+/* Area name block */
 .tree-area-block{
   margin-bottom:12px;
 }
@@ -279,7 +289,7 @@ nav a.active{color:var(--green); border-bottom-color:var(--green);}
   }
 }
 
-
+/* KPIs */
 .kpis{
   display:flex;justify-content:space-between;gap:8px;
   padding:10px 12px 16px;flex-wrap:nowrap;overflow:visible;position:relative;
@@ -350,7 +360,7 @@ footer{
   place-items:center;font-weight:900;font-size:12px;color:#111827;line-height:1;
 }
 
-
+/* maplibre controls */
 .maplibregl-ctrl-group{
   border-radius:10px !important;overflow:hidden;
   box-shadow:0 4px 12px rgba(0,0,0,.18);
