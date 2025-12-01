@@ -21,121 +21,159 @@
 
   <section id="mapPage" class="page active">
 
-    <aside id="sidebar">
+    <aside id="sidebar" class="open">
 
-    
-      <div id="hero" class="hero">
-
-        <img
-          id="siteImage"
-          src=""
-          alt="Green area image"
-          style="
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-          "
-          loading="eager"
-        >
-
-        <div class="hero-overlay">
-          <button class="hero-btn hero-left" id="btnClose" title="Back">
-            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M15 6l-6 6 6 6" stroke="#111827" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+      
+      <div id="searchPanel" class="search-panel">
+        
+   
+        <div class="search-header">
+          <div class="search-box">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none">
+              <circle cx="11" cy="11" r="7" stroke="#6b7280" stroke-width="2"/>
+              <path d="M16 16l4 4" stroke="#6b7280" stroke-width="2" stroke-linecap="round"/>
             </svg>
-          </button>
+            <input 
+              type="text" 
+              id="searchInput" 
+              placeholder="Look for a green area"
+              autocomplete="off"
+            />
+          </div>
+          <button id="btnToggleFilters" class="filter-toggle-btn">hide filters</button>
+        </div>
 
-          <div class="hero-right">
-            <button class="hero-btn" id="btnShareFb" title="Share Facebook">
-              <img src="./svg/btn-share-fb.svg" alt="Facebook">
+       
+        <div id="filterSection" class="filter-section">
+          <button class="category-btn">Category</button>
+          
+          <div class="toggle-row">
+            <span class="toggle-label">Show trees</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggleTrees" checked />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        
+        <div id="areasList" class="areas-list">
+       
+        </div>
+      </div>
+
+     
+      <div id="detailPanel" class="detail-panel" style="display:none;">
+        
+      
+        <div id="hero" class="hero">
+          <img
+            id="siteImage"
+            src=""
+            alt="Green area image"
+            style="width: 100%; height: 100%; object-fit: cover; display: block;"
+            loading="eager"
+          >
+
+          <div class="hero-overlay">
+            <button class="hero-btn hero-left" id="btnClose" title="Back">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M15 6l-6 6 6 6" stroke="#111827" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
             </button>
-            <button class="hero-btn" id="btnShareX" title="Share X">X</button>
+
+            <div class="hero-right">
+              <button class="hero-btn" id="btnShareFb" title="Share Facebook">
+                <img src="./svg/btn-share-fb.svg" alt="Facebook">
+              </button>
+              <button class="hero-btn" id="btnShareX" title="Share X">X</button>
+            </div>
           </div>
         </div>
-      </div>
 
-
-      <div class="content">
-        <div class="title-row">
-          <div class="title-wrap">
-            <h1 class="sb-title" id="sbTitle">Green Area</h1>
-            <p class="sb-subtitle" id="sbSubtitle"></p>
-          </div>
-
-          <button class="dir-btn" id="btnDirections" disabled>
-            <span class="dir-tip">Take me there</span>
-            <img src="./svg/btn-navigation.svg" alt="Directions" class="dir-icon">
-          </button>
-        </div>
-
-        <div id="treeDetails" class="tree-details" style="display:none;">
-
-          <div class="tree-area-block">
-            <div class="label">Area name</div>
-            <div class="value" id="treeAreaName">—</div>
-          </div>
-
-          <div class="tree-meta-grid">
-            <div class="meta">
-              <div class="label">Tree code</div>
-              <div class="value" id="treeCode">—</div>
+      
+        <div class="content">
+          <div class="title-row">
+            <div class="title-wrap">
+              <h1 class="sb-title" id="sbTitle">Green Area</h1>
+              <p class="sb-subtitle" id="sbSubtitle"></p>
             </div>
 
-            <div class="meta">
-              <div class="label">Height</div>
-              <div class="value">
-                <span id="treeHeight">—</span> <span class="unit">m</span>
+            <button class="dir-btn" id="btnDirections" disabled>
+              <span class="dir-tip">Take me there</span>
+              <img src="./svg/btn-navigation.svg" alt="Directions" class="dir-icon">
+            </button>
+          </div>
+
+  
+          <div id="treeDetails" class="tree-details" style="display:none;">
+            <div class="tree-area-block">
+              <div class="label">Area name</div>
+              <div class="value" id="treeAreaName">—</div>
+            </div>
+
+            <div class="tree-meta-grid">
+              <div class="meta">
+                <div class="label">Tree code</div>
+                <div class="value" id="treeCode">—</div>
+              </div>
+
+              <div class="meta">
+                <div class="label">Height</div>
+                <div class="value">
+                  <span id="treeHeight">—</span> <span class="unit">m</span>
+                </div>
+              </div>
+
+              <div class="meta">
+                <div class="label">Trunk diameter</div>
+                <div class="value">
+                  <span id="treeDiameter">—</span> <span class="unit">cm</span>
+                </div>
               </div>
             </div>
+          </div>
+        </div>
 
-            <div class="meta">
-              <div class="label">Trunk diameter</div>
-              <div class="value">
-                <span id="treeDiameter">—</span> <span class="unit">cm</span>
-              </div>
+        <!-- KPIs -->
+        <div class="kpis">
+          <div class="kpi" data-pos="left">
+            <div class="icon"><img src="./svg/ic-trees.svg" alt="Trees"></div>
+            <div class="value-row">
+              <div id="kpiTrees">—</div>
             </div>
+            <div class="t">alberi nell'area</div>
           </div>
-        </div>
-      </div>
 
-      <div class="kpis">
-        <div class="kpi" data-pos="left">
-          <div class="icon"><img src="./svg/ic-trees.svg"></div>
-          <div class="value-row">
-            <div id="kpiTrees">—</div>
+          <div class="kpi">
+            <div class="icon"><img src="./svg/ic-co2.svg" alt="CO2"></div>
+            <div class="value-row"><div id="kpiCO2Seq">—</div></div>
+            <div class="t">Co2 rimossi</div>
           </div>
-          <div class="t">alberi nell'area</div>
-        </div>
 
-        <div class="kpi">
-          <div class="icon"><img src="./svg/ic-co2.svg"></div>
-          <div class="value-row"><div id="kpiCO2Seq">—</div></div>
-          <div class="t">Co2 rimossi</div>
-        </div>
+          <div class="kpi">
+            <div class="icon"><img src="./svg/ic-pm.svg" alt="PM"></div>
+            <div class="value-row"><div id="kpiPM">—</div></div>
+            <div class="t">PM assorbito</div>
+          </div>
 
-        <div class="kpi">
-          <div class="icon"><img src="./svg/ic-pm.svg"></div>
-          <div class="value-row"><div id="kpiPM">—</div></div>
-          <div class="t">PM assorbito</div>
-        </div>
+          <div class="kpi">
+            <div class="icon"><img src="./svg/ic-save-energy.svg" alt="Rain"></div>
+            <div class="value-row"><div id="kpiRain">—</div></div>
+            <div class="t">Pioggia</div>
+          </div>
 
-        <div class="kpi">
-          <div class="icon"><img src="./svg/ic-save-energy.svg"></div>
-          <div class="value-row"><div id="kpiRain">—</div></div>
-          <div class="t">Pioggia</div>
-        </div>
-
-        <div class="kpi">
-          <div class="icon"><img src="./svg/ic-economic-value.svg"></div>
-          <div class="value-row"><div id="kpiEur">—</div></div>
-          <div class="t">Valore</div>
+          <div class="kpi">
+            <div class="icon"><img src="./svg/ic-economic-value.svg" alt="Value"></div>
+            <div class="value-row"><div id="kpiEur">—</div></div>
+            <div class="t">Valore</div>
+          </div>
         </div>
       </div>
 
     </aside>
 
-    <button id="sidebarHandle" class="sidebar-handle">
+    <button id="sidebarHandle" class="sidebar-handle open">
       <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"></path></svg>
     </button>
 

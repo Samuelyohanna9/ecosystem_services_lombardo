@@ -29,6 +29,6 @@ export function setupSidebarHandle(sidebar, sidebarHandle){
 
   window.addEventListener("resize", positionHandle);
 
-  // expose helper
+  
   return { positionHandle };
 }
